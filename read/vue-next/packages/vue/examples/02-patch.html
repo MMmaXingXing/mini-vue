@@ -1,5 +1,6 @@
 <div id="app">
-  <h1>vue3 inheritAttrs</h1>
+  <h1>vue3 更新流程</h1>
+  <p>{{counter}}</p>
   <comp></comp>
 </div>
 <script src="../dist/vue.global.js"></script>
@@ -7,7 +8,18 @@
   // vue2: new Vue({})
   // 变化1:函数创建实例
   // vue3 createApp({})
-  const app = Vue.createApp({})
+  const app = Vue.createApp({
+    data() {
+      return {
+        counter: 1
+      }
+    },
+    mounted() {
+      setInterval(() => {
+        this.counter++
+      }, 1000)
+    }
+  })
   // 变化2:实例方法
   app.component('comp', {
     template: '<div>1212</div>'

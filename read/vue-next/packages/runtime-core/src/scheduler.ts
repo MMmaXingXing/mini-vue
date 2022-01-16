@@ -105,6 +105,7 @@ export function queueJob(job: SchedulerJob) {
   }
 }
 
+// 启动批量任务执行
 function queueFlush() {
   if (!isFlushing && !isFlushPending) {
     isFlushPending = true

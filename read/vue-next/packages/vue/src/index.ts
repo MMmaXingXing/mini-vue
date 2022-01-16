@@ -32,6 +32,7 @@ function compileToFunction(
     return cached
   }
 
+  // mount传入参数是否为#开头
   if (template[0] === '#') {
     const el = document.querySelector(template)
     if (__DEV__ && !el) {
@@ -44,6 +45,7 @@ function compileToFunction(
     template = el ? el.innerHTML : ``
   }
 
+  // 模版字符串需要编译，最终希望得到一个render
   const { code } = compile(
     template,
     extend(

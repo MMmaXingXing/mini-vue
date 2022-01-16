@@ -590,6 +590,7 @@ export function setupComponent(
   initProps(instance, props, isStateful, isSSR)
   initSlots(instance, children)
 
+  // 如果组件有状态，执行状态初始化，并返回setup选项的返回值。
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
@@ -637,12 +638,16 @@ function setupStatefulComponent(
   }
   // 2. call setup()
   const { setup } = Component
+  // 如果用户使用了setup
   if (setup) {
+    // 创建setup上下文对象
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
+    // 设置当前实例对象，配合getCurrentInstance使用
     setCurrentInstance(instance)
     pauseTracking()
+    // 调用setup函数
     const setupResult = callWithErrorHandling(
       setup,
       instance,
@@ -675,6 +680,7 @@ function setupStatefulComponent(
         )
       }
     } else {
+      // 如果setup函数返回的结果不是一个Promise，则执行结果处理函数
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
@@ -687,6 +693,7 @@ export function handleSetupResult(
   setupResult: unknown,
   isSSR: boolean
 ) {
+  // 判断返回的结果是不是函数，如果是函数则作为render处理
   if (isFunction(setupResult)) {
     // setup returned an inline render function
     if (__SSR__ && (instance.type as ComponentOptions).__ssrInlineRender) {
@@ -696,6 +703,7 @@ export function handleSetupResult(
     } else {
       instance.render = setupResult as InternalRenderFunction
     }
+    // 如果返回的结果是个对象
   } else if (isObject(setupResult)) {
     if (__DEV__ && isVNode(setupResult)) {
       warn(
@@ -708,6 +716,8 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
+    // 转换setupResult为响应式对象
+    // 将来渲染函数中会首先从setupState里面去取值。
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
@@ -719,6 +729,9 @@ export function handleSetupResult(
       }`
     )
   }
+  // 最后依然要执行组件的安装
+  // 主要是处理其他的options api
+
   finishComponentSetup(instance, isSSR)
 }
 
@@ -814,6 +827,7 @@ export function finishComponentSetup(
   }
 
   // support for 2.x options
+  // 支持vue2.0的optionAPI
   if (__FEATURE_OPTIONS_API__ && !(__COMPAT__ && skipOptions)) {
     setCurrentInstance(instance)
     pauseTracking()
@@ -875,6 +889,7 @@ function createAttrsProxy(instance: ComponentInternalInstance): Data {
 export function createSetupContext(
   instance: ComponentInternalInstance
 ): SetupContext {
+  // 对外接口暴露
   const expose: SetupContext['expose'] = exposed => {
     if (__DEV__ && instance.exposed) {
       warn(`expose() should be called only once per setup().`)
@@ -882,6 +897,7 @@ export function createSetupContext(
     instance.exposed = exposed || {}
   }
 
+  // 组件非属性特性
   let attrs: Data
   if (__DEV__) {
     // We use getters in dev in case libs like test-utils overwrite instance
@@ -899,7 +915,9 @@ export function createSetupContext(
       expose
     })
   } else {
+    // 返回setupContext
     return {
+      // 只读的attrs
       get attrs() {
         return attrs || (attrs = createAttrsProxy(instance))
       },

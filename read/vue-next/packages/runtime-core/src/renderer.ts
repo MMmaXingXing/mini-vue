@@ -1219,6 +1219,7 @@ function baseCreateRenderer(
       if (__DEV__) {
         startMeasure(instance, `init`)
       }
+      // 组件的初始化，等效于vue2中__init()
       setupComponent(instance)
       if (__DEV__) {
         endMeasure(instance, `init`)
@@ -1239,6 +1240,8 @@ function baseCreateRenderer(
       return
     }
 
+    // 安装渲染函数副作用
+    // 建立一个更新机制，便于如果有数据发生更新，界面会更新
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1299,6 +1302,9 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
+    // 创建了一个组件更新函数
+    // 对patch产生了调用，在调用之前会获取渲染函数的结果
+    // 也就是当前组件的vnode，在首次执行渲染函数时，已经建立了依赖关系。
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
@@ -1538,12 +1544,14 @@ function baseCreateRenderer(
     }
 
     // create reactive effect for rendering
+    // 为组件的渲染创建一个响应式的副作用函数
     const effect = (instance.effect = new ReactiveEffect(
-      componentUpdateFn,
-      () => queueJob(instance.update),
+      componentUpdateFn, // 执行函数
+      () => queueJob(instance.update), // scheduler
       instance.scope // track it in component's effect scope
     ))
 
+    // 前面被queueJob的事effectJob
     const update = (instance.update = effect.run.bind(effect) as SchedulerJob)
     update.id = instance.uid
     // allowRecurse
@@ -2302,6 +2310,9 @@ function baseCreateRenderer(
         unmount(container._vnode, null, null, true)
       }
     } else {
+      // 由于传入第一个参数是null
+      // 所以首次patch是挂载过程，不是更新过程。
+      // 此处vnode会被patch转化为dome对象，并追加到参数2的这个容器中。
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
     flushPostFlushCbs()

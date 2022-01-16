@@ -279,7 +279,9 @@ export function createAppAPI<HostElement>(
         isHydrate?: boolean,
         isSVG?: boolean
       ): any {
+        // 首次执行并未挂载
         if (!isMounted) {
+          // 创建组件的VNode
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
