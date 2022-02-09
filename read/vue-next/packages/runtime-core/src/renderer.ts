@@ -1240,8 +1240,6 @@ function baseCreateRenderer(
       return
     }
 
-    // 安装渲染函数副作用
-    // 建立一个更新机制，便于如果有数据发生更新，界面会更新
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1293,6 +1291,8 @@ function baseCreateRenderer(
     }
   }
 
+  // 安装渲染函数副作用
+  // 建立一个更新机制，便于如果有数据发生更新，界面会更新
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,
@@ -1481,16 +1481,20 @@ function baseCreateRenderer(
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+
+        // 获取最近vnode
         const nextTree = renderComponentRoot(instance)
         if (__DEV__) {
           endMeasure(instance, `render`)
         }
+        // 获取缓存的oldVnode
         const prevTree = instance.subTree
         instance.subTree = nextTree
 
         if (__DEV__) {
           startMeasure(instance, `patch`)
         }
+        // 执行diff算法，此部分就是diff算法运行的地方了
         patch(
           prevTree,
           nextTree,
