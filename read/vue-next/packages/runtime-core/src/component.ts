@@ -587,10 +587,10 @@ export function setupComponent(
 
   const { props, children } = instance.vnode
   const isStateful = isStatefulComponent(instance)
-  initProps(instance, props, isStateful, isSSR)
-  initSlots(instance, children)
+  initProps(instance, props, isStateful, isSSR) // 初始化属性
+  initSlots(instance, children) // 初始化插槽
 
-  // 如果组件有状态，执行状态初始化，并返回setup选项的返回值。
+  // 如果组件有状态（存在data），执行状态初始化，并返回setup选项的返回值。
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
@@ -632,6 +632,9 @@ function setupStatefulComponent(
   instance.accessCache = Object.create(null)
   // 1. create public instance / render proxy
   // also mark it raw so it's never observed
+  // 创建一个代理对象，将instance.ctx进行拦截，也就是这里的参数实际上是可响应的
+  // PublicInstanceProxyHandlers这个方法中讲明了data冲突应该怎么办
+  // 创建公共实例/渲染函数的代理
   instance.proxy = markRaw(new Proxy(instance.ctx, PublicInstanceProxyHandlers))
   if (__DEV__) {
     exposePropsOnRenderContext(instance)
@@ -646,13 +649,14 @@ function setupStatefulComponent(
 
     // 设置当前实例对象，配合getCurrentInstance使用
     setCurrentInstance(instance)
+    // 暂停跟踪，提高性能
     pauseTracking()
     // 调用setup函数
     const setupResult = callWithErrorHandling(
-      setup,
-      instance,
-      ErrorCodes.SETUP_FUNCTION,
-      [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext]
+      setup, // 要调用函数
+      instance, // 参数实例
+      ErrorCodes.SETUP_FUNCTION, // 错误码
+      [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext] // 一系列的参数，未知类型的数组或者其他参数
     )
     resetTracking()
     unsetCurrentInstance()
@@ -688,6 +692,7 @@ function setupStatefulComponent(
   }
 }
 
+// 结果处理函数
 export function handleSetupResult(
   instance: ComponentInternalInstance,
   setupResult: unknown,
@@ -730,7 +735,7 @@ export function handleSetupResult(
     )
   }
   // 最后依然要执行组件的安装
-  // 主要是处理其他的options api
+  // 主要是处理其他的options api，兼容核心
 
   finishComponentSetup(instance, isSSR)
 }
@@ -759,6 +764,7 @@ export function registerRuntimeCompiler(_compile: any) {
 // dev only
 export const isRuntimeOnly = () => !compile
 
+// 这里处理兼容setup和options API
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,
@@ -831,7 +837,7 @@ export function finishComponentSetup(
   if (__FEATURE_OPTIONS_API__ && !(__COMPAT__ && skipOptions)) {
     setCurrentInstance(instance)
     pauseTracking()
-    applyOptions(instance)
+    applyOptions(instance) // 这里对options API做处理， 因此可以看出，option API生命周期晚于setup
     resetTracking()
     unsetCurrentInstance()
   }
@@ -902,7 +908,9 @@ export function createSetupContext(
   if (__DEV__) {
     // We use getters in dev in case libs like test-utils overwrite instance
     // properties (overwrites should not be done in prod)
+    // 所以最终createSetupContext会创建出 attrs、slots、emit、暴露接口
     return Object.freeze({
+      // 只读的attrs，createAttrsProxy 响应式的
       get attrs() {
         return attrs || (attrs = createAttrsProxy(instance))
       },

@@ -99,12 +99,14 @@ function createGetter(isReadonly = false, shallow = false) {
       return target
     }
 
+    // 数组的处理
     const targetIsArray = isArray(target)
 
     if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
+    // 对象处理
     const res = Reflect.get(target, key, receiver)
 
     if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys(key)) {
@@ -112,6 +114,7 @@ function createGetter(isReadonly = false, shallow = false) {
     }
 
     if (!isReadonly) {
+      // 建立target，key，和依赖函数之间的关系
       track(target, TrackOpTypes.GET, key)
     }
 
@@ -125,6 +128,7 @@ function createGetter(isReadonly = false, shallow = false) {
       return shouldUnwrap ? res.value : res
     }
 
+    // 如果是对象，则还会继续递归
     if (isObject(res)) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly

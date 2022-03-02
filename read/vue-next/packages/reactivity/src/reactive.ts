@@ -209,6 +209,8 @@ function createReactiveObject(
   if (targetType === TargetType.INVALID) {
     return target
   }
+  // 创建一个代理对象，将传入的原始对象作为代理目标
+  // 入参targetType中会判断，类型是否为set之类的新类型，是则运行前面，否则使用basehandlers
   const proxy = new Proxy(
     target,
     targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers

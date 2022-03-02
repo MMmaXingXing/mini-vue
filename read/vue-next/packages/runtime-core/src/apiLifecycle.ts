@@ -37,7 +37,7 @@ export function injectHook(
         // Set currentInstance during hook invocation.
         // This assumes the hook does not synchronously trigger other hooks, which
         // can only be false when the user does something really funky.
-        setCurrentInstance(target)
+        setCurrentInstance(target) 
         const res = callWithAsyncErrorHandling(hook, target, type, args)
         unsetCurrentInstance()
         resetTracking()

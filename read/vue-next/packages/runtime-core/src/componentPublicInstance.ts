@@ -259,7 +259,6 @@ export interface ComponentRenderContext {
   [key: string]: any
   _: ComponentInternalInstance
 }
-
 export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   get({ _: instance }: ComponentRenderContext, key: string) {
     const { ctx, setupState, data, props, accessCache, type, appContext } =

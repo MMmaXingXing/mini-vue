@@ -1179,8 +1179,9 @@ function baseCreateRenderer(
     }
   }
 
+  // 将传入初始化虚拟dom转换为dom追加到container
   const mountComponent: MountComponentFn = (
-    initialVNode,
+    initialVNode, // 根组件虚拟dom
     container,
     anchor,
     parentComponent,
@@ -1192,6 +1193,7 @@ function baseCreateRenderer(
     // mounting
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+    // 1.创建一个组件实例，准确说是根组件实例
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
