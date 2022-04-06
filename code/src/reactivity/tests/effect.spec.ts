@@ -1,4 +1,4 @@
-import { effect } from "../effect";
+import { effect, stop } from "../effect";
 import { reactive } from "../reactive";
 describe("effect", () => {
   it("happy path", () => {
@@ -36,7 +36,7 @@ describe("effect", () => {
     expect(r).toBe("foo");
   });
 
-  // 通过effect的第二个参数给定一个schedular的一个fn
+  // 通过effect的第二个参数给定一个scheduler的一个fn
   // 当effect第一次执行的时候才会执行fn，当响应式对象发生第二次更新则会执行schaduler
   // 当执行runner的时候，会再次执行fn
   it("scheduler", () => {
@@ -62,5 +62,41 @@ describe("effect", () => {
 
     run();
     expect(dummy).toBe(2);
+  });
+
+  // effect 导出一个stop方法，可以停止runner方法的运行，调用runner则又可以运行
+  it("stop", () => {
+    let dummy;
+    const obj = reactive({ prop: 1 });
+    const runner = effect(() => {
+      dummy = obj.prop;
+    });
+
+    obj.prop = 2;
+    expect(dummy).toBe(2);
+    stop(runner);
+    obj.prop = 3;
+    expect(dummy).toBe(2);
+
+    runner();
+    expect(dummy).toBe(3);
+  });
+
+  // onStop是调用stop方法之后的回调处理
+  it("onStop", () => {
+    const obj = reactive({
+      foo: 1
+    });
+    const onStop = jest.fn();
+    let dummy;
+    const runner = effect(
+      () => {
+        dummy = obj.foo;
+      },
+      { onStop }
+    );
+
+    stop(runner);
+    expect(onStop).toBeCalledTimes(1);
   });
 });
