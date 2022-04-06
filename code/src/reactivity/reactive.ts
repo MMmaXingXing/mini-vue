@@ -1,6 +1,6 @@
 import { track, trigger } from "./effect";
 
-export const reactive = (raw: any) => {
+export const reactive = (raw) => {
   return new Proxy(raw, {
     get(target, key) {
       const res = Reflect.get(target, key);
