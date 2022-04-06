@@ -1,4 +1,6 @@
 import { extend } from "../../shared";
+let activeEffect;
+let shoudTrack;
 class ReactiveEffect {
   private _fn;
   deps = [];
@@ -9,8 +11,15 @@ class ReactiveEffect {
   }
 
   run() {
+    if (!this.active) {
+      return this._fn();
+    }
+
+    shoudTrack = true;
     activeEffect = this;
-    return this._fn();
+    const result = this._fn();
+    shoudTrack = false;
+    return result;
   }
 
   stop() {
@@ -27,10 +36,13 @@ const cleanupEffect = (effect) => {
   effect.deps.forEach((dep: any) => {
     dep.delete(effect);
   });
+  effect.deps.length = 0;
 };
 
 const targetMap = new Map();
 export const track = (target, key) => {
+  if (!isTracking()) return;
+
   // target -> key => dep
   let depsMap = targetMap.get(target);
   if (!depsMap) {
@@ -44,9 +56,13 @@ export const track = (target, key) => {
     depsMap.set(key, dep);
   }
 
-  if (!activeEffect) return;
+  if (dep.get(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
+};
+
+const isTracking = () => {
+  return shoudTrack && activeEffect !== undefined;
 };
 
 export const trigger = (target, key) => {
@@ -61,7 +77,6 @@ export const trigger = (target, key) => {
   }
 };
 
-let activeEffect;
 export const effect = (fn, options: any = {}) => {
   const _effect = new ReactiveEffect(fn, options.scheduler);
   _effect.run();
