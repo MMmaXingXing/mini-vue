@@ -19,4 +19,20 @@ describe("effect", () => {
     user.age++;
     expect(nextAge).toBe(12);
   });
+
+  // effect 实现runner，runner功能，实现一个方法，运行effect传入的fn，返回fn的结果
+  // effect(fn) --> function (runner) --> fn --> return
+  it("should return runner when effect", () => {
+    let foo = 10;
+    const runner = effect(() => {
+      foo++;
+      return "foo";
+    });
+
+    expect(foo).toBe(11);
+
+    const r = runner();
+    expect(foo).toBe(12);
+    expect(r).toBe("foo");
+  });
 });
