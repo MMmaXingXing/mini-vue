@@ -1,5 +1,7 @@
 import { extend } from "../../shared";
 
+let activeEffect;
+let shouldTrack;
 class ReactiveEffect {
   private _fn;
   deps = [];
@@ -10,8 +12,16 @@ class ReactiveEffect {
   }
 
   run() {
+    if (!this.active) {
+      return this._fn();
+    }
+
+    shouldTrack = true;
     activeEffect = this;
-    return this._fn();
+
+    const result = this._fn();
+    shouldTrack = false;
+    return result;
   }
 
   stop() {
@@ -30,11 +40,14 @@ const cleanupEffect = (effect) => {
   effect.deps.forEach((dep: any) => {
     dep.delete(effect);
   });
+  effect.deps.length = 0;
 };
 
 // 每一个对象里面的每一个key，都需要有一个依赖搜集的容器，即有一个容器将我们传进来的fn存进去
 const targetMap = new Map();
 export const track = (target, key) => {
+  if (!isTracking()) return;
+
   // target -> key -> dep
   let depsMap = targetMap.get(target);
   if (!depsMap) {
@@ -47,11 +60,14 @@ export const track = (target, key) => {
     depsMap.set(key, dep);
   }
 
-  if (!activeEffect) return;
-
+  if (dep.has(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
 };
+
+function isTracking() {
+  return shouldTrack && activeEffect !== undefined;
+}
 
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
 export const trigger = (target, key) => {
@@ -66,7 +82,6 @@ export const trigger = (target, key) => {
   }
 };
 
-let activeEffect;
 export const effect = (fn, options: any = {}) => {
   const _effect = new ReactiveEffect(fn, options.scheduler);
   // options
