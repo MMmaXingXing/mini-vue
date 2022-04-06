@@ -20,9 +20,9 @@ describe("effect", () => {
     expect(nextAge).toBe(12);
   });
 
-  // effect 实现runner，runner功能，实现一个方法，运行effect传入的fn，返回fn的结果
-  // effect(fn) --> function (runner) --> fn --> return
   it("should return runner when effect", () => {
+    // effect 实现runner，runner功能，实现一个方法，运行effect传入的fn，返回fn的结果
+    // effect(fn) --> function (runner) --> fn --> return
     let foo = 10;
     const runner = effect(() => {
       foo++;
@@ -36,10 +36,10 @@ describe("effect", () => {
     expect(r).toBe("foo");
   });
 
-  // 通过effect的第二个参数给定一个scheduler的一个fn
-  // 当effect第一次执行的时候才会执行fn，当响应式对象发生第二次更新则会执行schaduler
-  // 当执行runner的时候，会再次执行fn
   it("scheduler", () => {
+    // 通过effect的第二个参数给定一个scheduler的一个fn
+    // 当effect第一次执行的时候才会执行fn，当响应式对象发生第二次更新则会执行schaduler
+    // 当执行runner的时候，会再次执行fn
     let dummy;
     let run;
     const scheduler = jest.fn(() => {
@@ -64,8 +64,8 @@ describe("effect", () => {
     expect(dummy).toBe(2);
   });
 
-  // effect 导出一个stop方法，可以停止runner方法的运行，调用runner则又可以运行
   it("stop", () => {
+    // effect 导出一个stop方法，可以停止runner方法的运行，调用runner则又可以运行
     let dummy;
     const obj = reactive({ prop: 1 });
     const runner = effect(() => {
@@ -82,8 +82,8 @@ describe("effect", () => {
     expect(dummy).toBe(3);
   });
 
-  // onStop是调用stop方法之后的回调处理
   it("onStop", () => {
+    // onStop是调用stop方法之后的回调处理
     const obj = reactive({
       foo: 1
     });
