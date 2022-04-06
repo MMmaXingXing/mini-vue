@@ -32,4 +32,30 @@ describe("effect", () => {
     expect(foo).toBe(12);
     expect(r).toBe("foo");
   });
+
+  // scheduler实现，effect入参传入schedular，如果存在，则更新时运行scheduler，不运行run。
+  it("schedular", () => {
+    let dummy;
+    let run;
+    const scheduler = jest.fn(() => {
+      run = runner;
+    });
+
+    const obj = reactive({ foo: 1 });
+    const runner = effect(
+      () => {
+        dummy = obj.foo;
+      },
+      { scheduler }
+    );
+    expect(scheduler).not.toHaveBeenCalled();
+    expect(dummy).toBe(1);
+
+    obj.foo++;
+    expect(scheduler).toHaveBeenCalledTimes(1);
+    expect(dummy).toBe(1);
+
+    run();
+    expect(dummy).toBe(2);
+  });
 });
