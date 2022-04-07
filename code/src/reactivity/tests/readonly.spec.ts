@@ -1,3 +1,4 @@
+import { isProxy } from "vue";
 import { isReadonly, readonly } from "../reactive";
 
 describe("readonly", () => {
@@ -11,6 +12,7 @@ describe("readonly", () => {
     expect(isReadonly(original)).toBe(false);
     expect(isReadonly(original.bar)).toBe(false);
     expect(isReadonly(wrapped.bar)).toBe(true);
+    expect(isProxy(wrapped)).toBe(true);
   });
 
   it("warn then call set", () => {
