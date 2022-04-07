@@ -60,19 +60,28 @@ export const track = (target, key) => {
     depsMap.set(key, dep);
   }
 
+  trackEffects(dep);
+};
+
+export const trackEffects = (dep) => {
+  //  搜集依赖处理拆分为公共方法
   if (dep.has(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
 };
 
-function isTracking() {
+export const isTracking = () => {
   return shouldTrack && activeEffect !== undefined;
-}
+};
 
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
 export const trigger = (target, key) => {
   let depsMap = targetMap.get(target);
   let dep = depsMap.get(key);
+  triggerEffects(dep);
+};
+
+export const triggerEffects = (dep) => {
   for (const effect of dep) {
     if (effect.scheduler) {
       effect.scheduler();
