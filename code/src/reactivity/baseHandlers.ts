@@ -1,5 +1,7 @@
+import { reactive } from "vue";
+import { isObject } from "../../shared";
 import { track, trigger } from "./effect";
-import { ReactiveFlags } from "./reactive";
+import { ReactiveFlags, readonly } from "./reactive";
 
 const createGetter = (isReadonly = false) => {
   return (target, key) => {
@@ -10,6 +12,10 @@ const createGetter = (isReadonly = false) => {
     }
 
     const res = Reflect.get(target, key);
+    if (isObject(res)) {
+      return isReadonly ? readonly(res) : reactive(res);
+    }
+
     // 依赖搜集
     if (!isReadonly) track(target, key);
     return res;
