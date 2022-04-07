@@ -56,7 +56,7 @@ export const track = (target, key) => {
     depsMap.set(key, dep);
   }
 
-  if (dep.get(activeEffect)) return;
+  if (dep.has(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
 };
