@@ -1,6 +1,6 @@
 import { effect } from "../effect";
 import { reactive } from "../reactive";
-import { isRef, ref, unRef } from "../ref";
+import { isRef, ref, unRef, proxyRefs } from "../ref";
 
 describe("ref", () => {
   it("hppy path", () => {
@@ -61,5 +61,27 @@ describe("ref", () => {
     const a = ref(1);
     expect(unRef(a)).toBe(1);
     expect(unRef(1)).toBe(1);
+  });
+
+  it("proxyRefs", () => {
+    const user = {
+      age: ref(10),
+      name: "xiaohong"
+    };
+
+    // 取值测试
+    const proxyUsers = proxyRefs(user);
+    expect(user.age.value).toBe(10);
+    expect(proxyUsers.age).toBe(10);
+    expect(proxyUsers.name).toBe("xiaohong");
+
+    // 设置值测试
+    proxyUsers.age = 20;
+    expect(proxyUsers.age).toBe(20);
+    expect(user.age.value).toBe(20);
+
+    proxyUsers.age = ref(10);
+    expect(proxyUsers.age).toBe(10);
+    expect(user.age.value).toBe(10);
   });
 });
