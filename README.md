@@ -8,7 +8,7 @@
 
 目标是用自己的 reactivity 支持现有的 demo 运行
 
-- [ ] reactive 的实现
+- [X] reactive 的实现
 - [ ] ref 的实现
 - [ ] readonly 的实现
 - [ ] computed 的实现

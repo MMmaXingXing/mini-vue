@@ -1,5 +1,4 @@
-import { isProxy } from "vue";
-import { isReadonly, readonly } from "../reactive";
+import { isReadonly, readonly, isProxy } from "../reactive";
 
 describe("readonly", () => {
   it("happy path", () => {
