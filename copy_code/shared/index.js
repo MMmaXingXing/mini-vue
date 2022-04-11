@@ -5,5 +5,5 @@ export const isObject = (val) => {
 };
 
 export const hasChanged = (value, newValue) => {
-  Object.is(value.newValue);
+  return !Object.is(value, newValue);
 };
