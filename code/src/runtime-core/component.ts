@@ -38,7 +38,7 @@ const handleSetupresult = (instance, steupResult: any) => {
 const finishComponentSetup = (instance) => {
   const Component = instance.type;
 
-  if (Component.render) {
-    instance.render = Component.render;
-  }
+  //   if (Component.render) {
+  instance.render = Component.render;
+  //   }
 };

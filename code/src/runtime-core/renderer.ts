@@ -6,7 +6,8 @@ export const render = (vnode, container) => {
 };
 
 const patch = (vnode, container) => {
-  // 判断是不是element，
+  // 如何判断是不是element，
+  // processElement()
   processComponent(vnode, container);
 };
 
