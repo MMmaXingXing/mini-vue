@@ -1,3 +1,4 @@
+import { isObject } from "../../shared/index";
 import { createComponentInstance, setupComponent } from "./component";
 
 export const render = (vnode, container) => {
@@ -8,7 +9,48 @@ export const render = (vnode, container) => {
 const patch = (vnode, container) => {
   // 如何判断是不是element，
   // processElement()
-  processComponent(vnode, container);
+  if (typeof vnode.type === "string") {
+    processElement(vnode, container);
+  } else if (isObject(vnode.type)) {
+    processComponent(vnode, container);
+  }
+};
+
+const processElement = (vnode, container) => {
+  // init --> update
+  mountElement(vnode, container);
+};
+
+const mountElement = (vnode, container) => {
+  const el = document.createElement(vnode.type);
+
+  // 子元素节点处理
+  // string array
+  const { children } = vnode;
+  if (typeof children === "string") {
+    el.textContent = children;
+  } else if (Array.isArray(children)) {
+    // vnode
+    mountChildren(vnode, el);
+  }
+
+  // props参数处理
+  const { props } = vnode;
+  for (const key in props) {
+    const val = props[key];
+    el.setAttribute(key, val);
+  }
+
+  container.append(el);
+  // el.setAttribute("id", "root");
+  // document.body.append(el);
+};
+
+// 进行深层vnode节点处理
+const mountChildren = (vnode, container) => {
+  vnode.children.forEach((v) => {
+    patch(v, container);
+  });
 };
 
 const processComponent = (vnode, container) => {
