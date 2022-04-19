@@ -1,7 +1,3 @@
-var isObject = function (val) {
-    return val !== undefined && typeof val === "object";
-};
-
 var publicPropertiesMap = {
     $el: function (i) { return i.vnode.el; }
 };
@@ -67,10 +63,11 @@ var render = function (vnode, container) {
 var patch = function (vnode, container) {
     // 如何判断是不是element，
     // processElement()
-    if (typeof vnode.type === "string") {
+    var shapeFlag = vnode.shapeFlag;
+    if (shapeFlag & 1 /* ELEMENT */) {
         processElement(vnode, container);
     }
-    else if (isObject(vnode.type)) {
+    else if (shapeFlag & 4 /* STATEFUL_COMPONENT */) {
         processComponent(vnode, container);
     }
 };
@@ -83,11 +80,11 @@ var mountElement = function (vnode, container) {
     var el = (vnode.el = document.createElement(vnode.type));
     // 子元素节点处理
     // string array
-    var children = vnode.children;
-    if (typeof children === "string") {
+    var children = vnode.children, shapeFlag = vnode.shapeFlag;
+    if (shapeFlag & 8 /* TEXT_CHILDREN */) {
         el.textContent = children;
     }
-    else if (Array.isArray(children)) {
+    else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
         // vnode
         mountChildren(vnode, el);
     }
@@ -130,9 +127,22 @@ var createVNode = function (type, props, children) {
         type: type,
         props: props,
         children: children,
+        shapeFlag: getShapeFlag(type),
         el: null
     };
+    // children
+    if (typeof children === "string") {
+        vnode.shapeFlag |= 4 /* TEXT_CHILDREN */;
+    }
+    else if (Array.isArray(children)) {
+        vnode.shapeFlag |= 8 /* ARRAY_CHILDREN */;
+    }
     return vnode;
+};
+var getShapeFlag = function (type) {
+    return typeof type === "string"
+        ? 1 /* ELEMENT */
+        : 2 /* STATEFUL_COMPONENT */;
 };
 
 var createApp = function (rootComponent) {
