@@ -2,10 +2,30 @@ var isObject = function (val) {
     return val !== undefined && typeof val === "object";
 };
 
+var publicPropertiesMap = {
+    $el: function (i) { return i.vnode.el; }
+};
+var PublicInstanceProxyHandlers = {
+    get: function (_a, key) {
+        var instance = _a._;
+        var setupState = instance.setupState;
+        if (key in setupState) {
+            return setupState[key];
+        }
+        var publicGetter = publicPropertiesMap[key];
+        if (publicGetter) {
+            return publicGetter(instance);
+        }
+        // setup --> options data
+        // $data
+    }
+};
+
 var createComponentInstance = function (vnode) {
     var component = {
         vnode: vnode,
-        type: vnode.type
+        type: vnode.type,
+        setupState: {}
     };
     return component;
 };
@@ -17,13 +37,15 @@ var setupComponent = function (instance) {
 };
 var setupStatefulComponent = function (instance) {
     var Component = instance.type;
+    // ctx
+    instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     var setup = Component.setup;
     if (setup) {
         var setupResult = setup();
-        handleSetupresult(instance, setupResult);
+        handleSetupResult(instance, setupResult);
     }
 };
-var handleSetupresult = function (instance, steupResult) {
+var handleSetupResult = function (instance, steupResult) {
     // function Object
     // TODO function
     if (typeof steupResult === "object") {
@@ -57,7 +79,8 @@ var processElement = function (vnode, container) {
     mountElement(vnode, container);
 };
 var mountElement = function (vnode, container) {
-    var el = document.createElement(vnode.type);
+    // 这里的vnode --> element --> div
+    var el = (vnode.el = document.createElement(vnode.type));
     // 子元素节点处理
     // string array
     var children = vnode.children;
@@ -87,23 +110,27 @@ var mountChildren = function (vnode, container) {
 var processComponent = function (vnode, container) {
     mountComponent(vnode, container);
 };
-var mountComponent = function (vnode, container) {
-    var instance = createComponentInstance(vnode);
+var mountComponent = function (initnalVNode, container) {
+    var instance = createComponentInstance(initnalVNode);
     setupComponent(instance);
-    setupRenderEffect(instance, container);
+    setupRenderEffect(instance, initnalVNode, container);
 };
-var setupRenderEffect = function (instance, container) {
-    var subTree = instance.render();
+var setupRenderEffect = function (instance, initnalVNode, container) {
+    var proxy = instance.proxy;
+    var subTree = instance.render.call(proxy);
     // vnode --> patch
     // vnode --> element --> mountElement
     patch(subTree, container);
+    // element --> mount
+    initnalVNode.el = subTree.el;
 };
 
 var createVNode = function (type, props, children) {
     var vnode = {
         type: type,
         props: props,
-        children: children
+        children: children,
+        el: null
     };
     return vnode;
 };

@@ -2,7 +2,8 @@ export const createVNode = (type, props?, children?) => {
   const vnode = {
     type,
     props,
-    children
+    children,
+    el: null
   };
   return vnode;
 };

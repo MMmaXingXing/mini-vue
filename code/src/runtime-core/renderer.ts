@@ -1,3 +1,4 @@
+import { visitNode } from "../../../../../../node_modules/typescript/lib/typescript";
 import { isObject } from "../../shared/index";
 import { createComponentInstance, setupComponent } from "./component";
 
@@ -22,7 +23,8 @@ const processElement = (vnode, container) => {
 };
 
 const mountElement = (vnode, container) => {
-  const el = document.createElement(vnode.type);
+  // 这里的vnode --> element --> div
+  const el = (vnode.el = document.createElement(vnode.type));
 
   // 子元素节点处理
   // string array
@@ -57,16 +59,20 @@ const processComponent = (vnode, container) => {
   mountComponent(vnode, container);
 };
 
-const mountComponent = (vnode, container) => {
-  const instance = createComponentInstance(vnode);
+const mountComponent = (initnalVNode, container) => {
+  const instance = createComponentInstance(initnalVNode);
 
   setupComponent(instance);
-  setupRenderEffect(instance, container);
+  setupRenderEffect(instance, initnalVNode, container);
 };
 
-const setupRenderEffect = (instance, container) => {
-  const subTree = instance.render();
+const setupRenderEffect = (instance, initnalVNode, container) => {
+  const { proxy } = instance;
+  const subTree = instance.render.call(proxy);
   // vnode --> patch
   // vnode --> element --> mountElement
   patch(subTree, container);
+
+  // element --> mount
+  initnalVNode.el = subTree.el;
 };

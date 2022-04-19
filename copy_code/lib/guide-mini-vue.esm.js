@@ -12,6 +12,12 @@ var setupComponent = function (instance) {
 };
 var setupStatefulComponent = function (instance) {
     var Component = instance.vnode.type;
+    //ctx
+    instacne.proxy = new Proxy({}, {
+        get: function (target, key) {
+            // 从setupState获取值
+        }
+    });
     var setup = Component.setup;
     if (setup) {
         var setupResult = setup();

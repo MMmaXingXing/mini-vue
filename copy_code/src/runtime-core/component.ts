@@ -17,6 +17,16 @@ export const setupComponent = (instance) => {
 const setupStatefulComponent = (instance) => {
   const Component = instance.vnode.type;
 
+  //ctx
+  instacne.proxy = new Proxy(
+    {},
+    {
+      get(target, key) {
+        // 从setupState获取值
+      }
+    }
+  );
+
   const { setup } = Component;
 
   if (setup) {
@@ -43,6 +53,6 @@ const finishComponentSetup = (instance) => {
   const Component = instance.type;
 
   if (Component.render) {
-      instance.render = Component.render;
+    instance.render = Component.render;
   }
 };
