@@ -2,15 +2,26 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var initProps = function (instance, rawProps) {
+    instance.props = rawProps;
+};
+
+var hasOwn = function (val, key) {
+    return Object.prototype.hasOwnProperty.call(val, key);
+};
+
 var publicPropertiesMap = {
     $el: function (i) { return i.vnode.el; }
 };
 var PublicInstanceProxyHandlers = {
     get: function (_a, key) {
         var instance = _a._;
-        var setupState = instance.setupState;
-        if (key in setupState) {
+        var setupState = instance.setupState, props = instance.props;
+        if (hasOwn(setupState, key)) {
             return setupState[key];
+        }
+        else if (hasOwn(props, key)) {
+            return props[key];
         }
         var publicGetter = publicPropertiesMap[key];
         if (publicGetter) {
@@ -25,12 +36,13 @@ var createComponentInstance = function (vnode) {
     var component = {
         vnode: vnode,
         type: vnode.type,
-        setupState: {}
+        setupState: {},
+        props: {}
     };
     return component;
 };
 var setupComponent = function (instance) {
-    // initProps
+    initProps(instance, instance.vnode.props);
     // initSlots
     // 初始化有状态的函数式组件
     setupStatefulComponent(instance);
@@ -41,7 +53,7 @@ var setupStatefulComponent = function (instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     var setup = Component.setup;
     if (setup) {
-        var setupResult = setup();
+        var setupResult = setup(instance.props);
         handleSetupResult(instance, setupResult);
     }
 };
