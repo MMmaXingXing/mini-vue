@@ -7,6 +7,22 @@ export const App = {
   name: "App",
   render() {
     window.self = this;
+    const foo = h(
+      Foo,
+      {
+        count: 1,
+        onAdd() {
+          console.log("我被点击了");
+        },
+        onAddFoo() {
+          console.log("我是onAddFoo");
+        }
+      },
+      {
+        header: ({ age }) => h("p", {}, "slots 123" + age),
+        body: () => h("p", {}, "slots boay")
+      }
+    );
     return h(
       "div",
       {
@@ -18,18 +34,7 @@ export const App = {
       },
       // setupState
       // this.$el
-      [
-        h("div", {}, "hi " + this.msg),
-        h(Foo, {
-          count: 1,
-          onAdd() {
-            console.log("我被点击了");
-          },
-          onAddFoo() {
-            console.log("我是onAddFoo");
-          }
-        })
-      ]
+      [h("div", {}, "hi " + this.msg), foo]
       // string
       // "hi " + this.msg
       // [h("p", { class: "red" }, "hi"), h("p", { class: "blue" }, "mini-vue")]

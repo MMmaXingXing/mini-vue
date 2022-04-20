@@ -130,7 +130,8 @@ var initProps = function (instance, rawProps) {
 };
 
 var publicPropertiesMap = {
-    $el: function (i) { return i.vnode.el; }
+    $el: function (i) { return i.vnode.el; },
+    $slots: function (i) { return i.slots; }
 };
 var PublicInstanceProxyHandlers = {
     get: function (_a, key) {
@@ -151,12 +152,35 @@ var PublicInstanceProxyHandlers = {
     }
 };
 
+var initSlots = function (instance, children) {
+    // 数组类型结构渲染
+    // instance.slots = Array.isArray(children) ? children : [children];
+    var vnode = instance.vnode;
+    if (vnode.shapeFlag & 16 /* SLOT_CHILDREN */) {
+        normalizeObjectSlots(children, instance.slots);
+    }
+};
+var normalizeObjectSlots = function (children, slots) {
+    var _loop_1 = function (key) {
+        var value = children[key];
+        slots[key] = function (props) { return normalizeSlotValue(value(props)); };
+    };
+    for (var key in children) {
+        _loop_1(key);
+    }
+    slots = slots;
+};
+var normalizeSlotValue = function (value) {
+    return Array.isArray(value) ? value : [value];
+};
+
 var createComponentInstance = function (vnode) {
     var component = {
         vnode: vnode,
         type: vnode.type,
         setupState: {},
         props: {},
+        slots: {},
         emit: function () { }
     };
     component.emit = emit.bind(null, component);
@@ -164,7 +188,7 @@ var createComponentInstance = function (vnode) {
 };
 var setupComponent = function (instance) {
     initProps(instance, instance.vnode.props);
-    // initSlots
+    initSlots(instance, instance.vnode.children);
     // 初始化有状态的函数式组件
     setupStatefulComponent(instance);
 };
@@ -283,6 +307,12 @@ var createVNode = function (type, props, children) {
     else if (Array.isArray(children)) {
         vnode.shapeFlag |= 8 /* ARRAY_CHILDREN */;
     }
+    // 组件 + children 为 object 则满足 slots 需求
+    if (vnode.shapeFlag & 2 /* STATEFUL_COMPONENT */) {
+        if (typeof children === "object") {
+            vnode.shapeFlag |= 16 /* SLOT_CHILDREN */;
+        }
+    }
     return vnode;
 };
 var getShapeFlag = function (type) {
@@ -307,4 +337,12 @@ var h = function (type, props, children) {
     return createVNode(type, props, children);
 };
 
-export { createApp, h };
+var renderSlots = function (slots, name, props) {
+    // 具名插槽
+    var slot = slots[name];
+    if (slot) {
+        return createVNode("div", {}, slot(props));
+    }
+};
+
+export { createApp, h, renderSlots };
