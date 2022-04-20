@@ -18,7 +18,18 @@ export const App = {
       },
       // setupState
       // this.$el
-      [h("div", {}, "hi " + this.msg), h(Foo, { count: 1 })]
+      [
+        h("div", {}, "hi " + this.msg),
+        h(Foo, {
+          count: 1,
+          onAdd() {
+            console.log("我被点击了");
+          },
+          onAddFoo() {
+            console.log("我是onAddFoo");
+          }
+        })
+      ]
       // string
       // "hi " + this.msg
       // [h("p", { class: "red" }, "hi"), h("p", { class: "blue" }, "mini-vue")]

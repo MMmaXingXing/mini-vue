@@ -5,6 +5,19 @@ var isObject = function (val) {
 var hasOwn = function (val, key) {
     return Object.prototype.hasOwnProperty.call(val, key);
 };
+var camelize = function (str) {
+    // add-foo --> addFoo
+    return str.replace(/-(\w)/g, function (_, c) {
+        return c ? c.toUpperCase() : "";
+    });
+};
+var capitalize = function (str) {
+    // add -> Add
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+var toHandlerKey = function (str) {
+    return str ? "on" + capitalize(str) : "";
+};
 
 // 每一个对象里面的每一个key，都需要有一个依赖搜集的容器，即有一个容器将我们传进来的fn存进去
 var targetMap = new Map();
@@ -94,6 +107,24 @@ var createActiveObject = function (target, baseHandler) {
     return new Proxy(target, baseHandler);
 };
 
+var emit = function (instance, event) {
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+    }
+    console.log("emit", event);
+    // instance.props --> event
+    var props = instance.props;
+    // TPP
+    // 先写成一个特定的行为 --> 重构成通用的行文
+    // add
+    // const handler = props["onAdd"];
+    // handler && handler();
+    var handlerName = toHandlerKey(camelize(event));
+    var handler = props[handlerName];
+    handler & handler.apply(void 0, args);
+};
+
 var initProps = function (instance, rawProps) {
     instance.props = rawProps || {};
 };
@@ -125,8 +156,10 @@ var createComponentInstance = function (vnode) {
         vnode: vnode,
         type: vnode.type,
         setupState: {},
-        props: {}
+        props: {},
+        emit: function () { }
     };
+    component.emit = emit.bind(null, component);
     return component;
 };
 var setupComponent = function (instance) {
@@ -141,7 +174,9 @@ var setupStatefulComponent = function (instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     var setup = Component.setup;
     if (setup) {
-        var setupResult = setup(shallowReadonly(instance.props));
+        var setupResult = setup(shallowReadonly(instance.props), {
+            emit: instance.emit
+        });
         handleSetupResult(instance, setupResult);
     }
 };
