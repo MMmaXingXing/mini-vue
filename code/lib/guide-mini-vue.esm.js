@@ -1,9 +1,101 @@
-var initProps = function (instance, rawProps) {
-    instance.props = rawProps;
+var extend = Object.assign;
+var isObject = function (val) {
+    return val !== undefined && typeof val === "object";
 };
-
 var hasOwn = function (val, key) {
     return Object.prototype.hasOwnProperty.call(val, key);
+};
+
+// 每一个对象里面的每一个key，都需要有一个依赖搜集的容器，即有一个容器将我们传进来的fn存进去
+var targetMap = new Map();
+// 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
+var trigger = function (target, key) {
+    var depsMap = targetMap.get(target);
+    var dep = depsMap.get(key);
+    triggerEffects(dep);
+};
+var triggerEffects = function (dep) {
+    for (var _i = 0, dep_1 = dep; _i < dep_1.length; _i++) {
+        var effect_1 = dep_1[_i];
+        if (effect_1.scheduler) {
+            effect_1.scheduler();
+        }
+        else {
+            effect_1.run();
+        }
+    }
+};
+
+var createGetter = function (isReadonly, shallow) {
+    if (isReadonly === void 0) { isReadonly = false; }
+    if (shallow === void 0) { shallow = false; }
+    return function (target, key) {
+        if (key === ReactiveFlags.IS_REACTIVE) {
+            return !isReadonly;
+        }
+        else if (key === ReactiveFlags.IS_READONLY) {
+            return isReadonly;
+        }
+        var res = Reflect.get(target, key);
+        if (shallow) {
+            return res;
+        }
+        if (isObject(res)) {
+            return isReadonly ? readonly(res) : reactive(res);
+        }
+        return res;
+    };
+};
+var createSetter = function () {
+    return function (target, key, val) {
+        var res = Reflect.set(target, key, val);
+        // 触发依赖
+        trigger(target, key);
+        return res;
+    };
+};
+var get = createGetter();
+var set = createSetter();
+var readonlyGet = createGetter(true);
+var shallowReadonlyGet = createGetter(true, true);
+var mutableHandlers = {
+    get: get,
+    set: set
+};
+var readonlyHandlers = {
+    get: readonlyGet,
+    set: function (target, key) {
+        console.warn("key:".concat(key, "set\u5931\u8D25\uFF0C\u56E0\u4E3Atarget\u662Freadonly\uFF0C ").concat(target));
+        return true;
+    }
+};
+var shallowReadonlyHandlers = extend({}, readonlyHandlers, {
+    get: shallowReadonlyGet
+});
+
+var ReactiveFlags;
+(function (ReactiveFlags) {
+    ReactiveFlags["IS_REACTIVE"] = "__v_isReactive";
+    ReactiveFlags["IS_READONLY"] = "__v_isReadonly";
+})(ReactiveFlags || (ReactiveFlags = {}));
+var reactive = function (raw) {
+    return createActiveObject(raw, mutableHandlers);
+};
+var readonly = function (raw) {
+    return createActiveObject(raw, readonlyHandlers);
+};
+var shallowReadonly = function (raw) {
+    return createActiveObject(raw, shallowReadonlyHandlers);
+};
+var createActiveObject = function (target, baseHandler) {
+    if (!isObject(target)) {
+        console.warn("target 必须是一个对象");
+    }
+    return new Proxy(target, baseHandler);
+};
+
+var initProps = function (instance, rawProps) {
+    instance.props = rawProps || {};
 };
 
 var publicPropertiesMap = {
@@ -49,7 +141,7 @@ var setupStatefulComponent = function (instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     var setup = Component.setup;
     if (setup) {
-        var setupResult = setup(instance.props);
+        var setupResult = setup(shallowReadonly(instance.props));
         handleSetupResult(instance, setupResult);
     }
 };

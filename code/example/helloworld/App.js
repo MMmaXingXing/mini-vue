@@ -4,6 +4,7 @@ import { Foo } from "./Foo.js";
 window.self = this;
 
 export const App = {
+  name: "App",
   render() {
     window.self = this;
     return h(
@@ -22,7 +23,7 @@ export const App = {
       // "hi " + this.msg
       // [h("p", { class: "red" }, "hi"), h("p", { class: "blue" }, "mini-vue")]
     );
-  }, 
+  },
   setup() {
     return {
       msg: "mini-vue"

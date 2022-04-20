@@ -1,3 +1,4 @@
+import { isObject } from "../../shared/index";
 import {
   mutableHandlers,
   readonlyHandlers,
@@ -9,10 +10,6 @@ export enum ReactiveFlags {
   IS_REACTIVE = "__v_isReactive",
   IS_READONLY = "__v_isReadonly"
 }
-
-const createActiveObject = (raw, baseHandler) => {
-  return new Proxy(raw, baseHandler);
-};
 
 export const reactive = (raw) => {
   return createActiveObject(raw, mutableHandlers);
@@ -36,4 +33,11 @@ export const isReadonly = (value) => {
 
 export const isProxy = (value) => {
   return isReactive(value) || isReadonly(value);
+};
+
+const createActiveObject = (target, baseHandler) => {
+  if (!isObject(target)) {
+    console.warn("target 必须是一个对象");
+  }
+  return new Proxy(target, baseHandler);
 };
