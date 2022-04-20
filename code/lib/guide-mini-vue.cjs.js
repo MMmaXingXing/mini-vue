@@ -71,7 +71,7 @@ var patch = function (vnode, container) {
     if (shapeFlag & 1 /* ELEMENT */) {
         processElement(vnode, container);
     }
-    else if (shapeFlag & 4 /* STATEFUL_COMPONENT */) {
+    else if (shapeFlag & 2 /* STATEFUL_COMPONENT */) {
         processComponent(vnode, container);
     }
 };
@@ -85,10 +85,10 @@ var mountElement = function (vnode, container) {
     // 子元素节点处理
     // string array
     var children = vnode.children, shapeFlag = vnode.shapeFlag;
-    if (shapeFlag & 8 /* TEXT_CHILDREN */) {
+    if (shapeFlag & 4 /* TEXT_CHILDREN */) {
         el.textContent = children;
     }
-    else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+    else if (shapeFlag & 8 /* ARRAY_CHILDREN */) {
         // vnode
         mountChildren(vnode, el);
     }
@@ -96,7 +96,14 @@ var mountElement = function (vnode, container) {
     var props = vnode.props;
     for (var key in props) {
         var val = props[key];
-        el.setAttribute(key, val);
+        var isOn = function (key) { return /^on[A-Z]/.test(key); };
+        if (isOn(key)) {
+            var event_1 = key.slice(2).toLowerCase();
+            el.addEventListener(event_1, val);
+        }
+        else {
+            el.setAttribute(key, val);
+        }
     }
     container.append(el);
     // el.setAttribute("id", "root");
