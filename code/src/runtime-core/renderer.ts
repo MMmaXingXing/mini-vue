@@ -1,5 +1,7 @@
+import { visitNodes } from "../../node_modules/typescript/lib/typescript";
 import { ShapeFlags } from "../../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
+import { Fragment, Text } from "./vnode";
 
 export const render = (vnode, container) => {
   // patch 调用patch方法
@@ -9,12 +11,34 @@ export const render = (vnode, container) => {
 const patch = (vnode, container) => {
   // 如何判断是不是element，
   // processElement()
-  const { shapeFlag } = vnode;
-  if (shapeFlag & ShapeFlags.ELEMENT) {
-    processElement(vnode, container);
-  } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    processComponent(vnode, container);
+  const { type, shapeFlag } = vnode;
+  switch (type) {
+    case Fragment:
+      processFragment(vnode, container);
+      break;
+    case Text:
+      processText(vnode, container);
+      break;
+    default:
+      if (shapeFlag & ShapeFlags.ELEMENT) {
+        processElement(vnode, container);
+      } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        processComponent(vnode, container);
+      }
+      break;
   }
+};
+
+const processText = (vnode, container) => {
+  const { children } = vnode;
+  const textNode = (vnode.el = document.createTextNode(children));
+  container.append(textNode);
+};
+
+const processFragment = (vnode, container) => {
+  // Implemment
+  // 将虚拟节点
+  mountChildren(vnode, container);
 };
 
 const processElement = (vnode, container) => {

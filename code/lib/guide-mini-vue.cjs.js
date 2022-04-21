@@ -223,6 +223,40 @@ var finishComponentSetup = function (instance) {
     //   }
 };
 
+var Fragment = Symbol("Fragment");
+var Text = Symbol("Text");
+var createVNode = function (type, props, children) {
+    var vnode = {
+        type: type,
+        props: props,
+        children: children,
+        shapeFlag: getShapeFlag(type),
+        el: null
+    };
+    // children
+    if (typeof children === "string") {
+        vnode.shapeFlag |= 4 /* TEXT_CHILDREN */;
+    }
+    else if (Array.isArray(children)) {
+        vnode.shapeFlag |= 8 /* ARRAY_CHILDREN */;
+    }
+    // 组件 + children 为 object 则满足 slots 需求
+    if (vnode.shapeFlag & 2 /* STATEFUL_COMPONENT */) {
+        if (typeof children === "object") {
+            vnode.shapeFlag |= 16 /* SLOT_CHILDREN */;
+        }
+    }
+    return vnode;
+};
+var createTextVNode = function (text) {
+    return createVNode(Text, {}, text);
+};
+var getShapeFlag = function (type) {
+    return typeof type === "string"
+        ? 1 /* ELEMENT */
+        : 2 /* STATEFUL_COMPONENT */;
+};
+
 var render = function (vnode, container) {
     // patch 调用patch方法
     patch(vnode, container);
@@ -230,13 +264,33 @@ var render = function (vnode, container) {
 var patch = function (vnode, container) {
     // 如何判断是不是element，
     // processElement()
-    var shapeFlag = vnode.shapeFlag;
-    if (shapeFlag & 1 /* ELEMENT */) {
-        processElement(vnode, container);
+    var type = vnode.type, shapeFlag = vnode.shapeFlag;
+    switch (type) {
+        case Fragment:
+            processFragment(vnode, container);
+            break;
+        case Text:
+            processText(vnode, container);
+            break;
+        default:
+            if (shapeFlag & 1 /* ELEMENT */) {
+                processElement(vnode, container);
+            }
+            else if (shapeFlag & 2 /* STATEFUL_COMPONENT */) {
+                processComponent(vnode, container);
+            }
+            break;
     }
-    else if (shapeFlag & 2 /* STATEFUL_COMPONENT */) {
-        processComponent(vnode, container);
-    }
+};
+var processText = function (vnode, container) {
+    var children = vnode.children;
+    var textNode = (vnode.el = document.createTextNode(children));
+    container.append(textNode);
+};
+var processFragment = function (vnode, container) {
+    // Implemment
+    // 将虚拟节点
+    mountChildren(vnode, container);
 };
 var processElement = function (vnode, container) {
     // init --> update
@@ -296,35 +350,6 @@ var setupRenderEffect = function (instance, initnalVNode, container) {
     initnalVNode.el = subTree.el;
 };
 
-var createVNode = function (type, props, children) {
-    var vnode = {
-        type: type,
-        props: props,
-        children: children,
-        shapeFlag: getShapeFlag(type),
-        el: null
-    };
-    // children
-    if (typeof children === "string") {
-        vnode.shapeFlag |= 4 /* TEXT_CHILDREN */;
-    }
-    else if (Array.isArray(children)) {
-        vnode.shapeFlag |= 8 /* ARRAY_CHILDREN */;
-    }
-    // 组件 + children 为 object 则满足 slots 需求
-    if (vnode.shapeFlag & 2 /* STATEFUL_COMPONENT */) {
-        if (typeof children === "object") {
-            vnode.shapeFlag |= 16 /* SLOT_CHILDREN */;
-        }
-    }
-    return vnode;
-};
-var getShapeFlag = function (type) {
-    return typeof type === "string"
-        ? 1 /* ELEMENT */
-        : 2 /* STATEFUL_COMPONENT */;
-};
-
 var createApp = function (rootComponent) {
     return {
         mount: function (rootContainer) {
@@ -345,10 +370,11 @@ var renderSlots = function (slots, name, props) {
     // 具名插槽
     var slot = slots[name];
     if (slot) {
-        return createVNode("div", {}, slot(props));
+        return createVNode(Fragment, {}, slot(props));
     }
 };
 
 exports.createApp = createApp;
+exports.createTextVNode = createTextVNode;
 exports.h = h;
 exports.renderSlots = renderSlots;
