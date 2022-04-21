@@ -174,13 +174,16 @@ var normalizeSlotValue = function (value) {
     return Array.isArray(value) ? value : [value];
 };
 
-var createComponentInstance = function (vnode) {
+var createComponentInstance = function (vnode, parent) {
     var component = {
         vnode: vnode,
         type: vnode.type,
         setupState: {},
         props: {},
         slots: {},
+        provides: parent ? parent.provides : {},
+        parent: parent,
+        proxy: null,
         emit: function () { }
     };
     component.emit = emit.bind(null, component);
@@ -265,23 +268,24 @@ var render = function (vnode, container) {
     // patch 调用patch方法
     patch(vnode, container);
 };
-var patch = function (vnode, container) {
+var patch = function (vnode, container, parentComponent) {
+    if (parentComponent === void 0) { parentComponent = null; }
     // 如何判断是不是element，
     // processElement()
     var type = vnode.type, shapeFlag = vnode.shapeFlag;
     switch (type) {
         case Fragment:
-            processFragment(vnode, container);
+            processFragment(vnode, container, parentComponent);
             break;
         case Text:
             processText(vnode, container);
             break;
         default:
             if (shapeFlag & 1 /* ELEMENT */) {
-                processElement(vnode, container);
+                processElement(vnode, container, parentComponent);
             }
             else if (shapeFlag & 2 /* STATEFUL_COMPONENT */) {
-                processComponent(vnode, container);
+                processComponent(vnode, container, parentComponent);
             }
             break;
     }
@@ -291,16 +295,16 @@ var processText = function (vnode, container) {
     var textNode = (vnode.el = document.createTextNode(children));
     container.append(textNode);
 };
-var processFragment = function (vnode, container) {
+var processFragment = function (vnode, container, parentComponent) {
     // Implemment
     // 将虚拟节点
-    mountChildren(vnode, container);
+    mountChildren(vnode, container, parentComponent);
 };
-var processElement = function (vnode, container) {
+var processElement = function (vnode, container, parentComponent) {
     // init --> update
-    mountElement(vnode, container);
+    mountElement(vnode, container, parentComponent);
 };
-var mountElement = function (vnode, container) {
+var mountElement = function (vnode, container, parentComponent) {
     // 这里的vnode --> element --> div
     var el = (vnode.el = document.createElement(vnode.type));
     // 子元素节点处理
@@ -311,7 +315,7 @@ var mountElement = function (vnode, container) {
     }
     else if (shapeFlag & 8 /* ARRAY_CHILDREN */) {
         // vnode
-        mountChildren(vnode, el);
+        mountChildren(vnode, el, parentComponent);
     }
     // props参数处理
     var props = vnode.props;
@@ -331,16 +335,16 @@ var mountElement = function (vnode, container) {
     // document.body.append(el);
 };
 // 进行深层vnode节点处理
-var mountChildren = function (vnode, container) {
+var mountChildren = function (vnode, container, parentComponent) {
     vnode.children.forEach(function (v) {
-        patch(v, container);
+        patch(v, container, parentComponent);
     });
 };
-var processComponent = function (vnode, container) {
-    mountComponent(vnode, container);
+var processComponent = function (vnode, container, parentComponent) {
+    mountComponent(vnode, container, parentComponent);
 };
-var mountComponent = function (initnalVNode, container) {
-    var instance = createComponentInstance(initnalVNode);
+var mountComponent = function (initnalVNode, container, parentComponent) {
+    var instance = createComponentInstance(initnalVNode, parentComponent);
     setupComponent(instance);
     setupRenderEffect(instance, initnalVNode, container);
 };
@@ -349,7 +353,7 @@ var setupRenderEffect = function (instance, initnalVNode, container) {
     var subTree = instance.render.call(proxy);
     // vnode --> patch
     // vnode --> element --> mountElement
-    patch(subTree, container);
+    patch(subTree, container, instance);
     // element --> mount
     initnalVNode.el = subTree.el;
 };
@@ -378,4 +382,34 @@ var renderSlots = function (slots, name, props) {
     }
 };
 
-export { createApp, createTextVNode, getCurrentInstance, h, renderSlots };
+var provide = function (key, value) {
+    var _a;
+    var currentInstance = getCurrentInstance();
+    if (currentInstance) {
+        var provides = currentInstance.provides;
+        // 使用原型链改写
+        var parentProvides = (_a = currentInstance.parent) === null || _a === void 0 ? void 0 : _a.provides;
+        if (provides === parentProvides) {
+            // 初始化操作只在init做
+            provides = currentInstance.provides = Object.create(parentProvides);
+        }
+        provides[key] = value;
+    }
+};
+var inject = function (key, defaultValue) {
+    var currentInstance = getCurrentInstance();
+    if (currentInstance) {
+        var parentProvide = currentInstance.parent;
+        if (key in parentProvide) {
+            return parentProvide[key];
+        }
+        else if (defaultValue) {
+            if (typeof defaultValue === "function") {
+                return defaultValue();
+            }
+            return defaultValue;
+        }
+    }
+};
+
+export { createApp, createTextVNode, getCurrentInstance, h, inject, provide, renderSlots };
