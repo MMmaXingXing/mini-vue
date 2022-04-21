@@ -1,6 +1,6 @@
 # mini-vue
 
-最简易版本 vue 实现，fork 各路大牛思路
+从零到一实现 mini-vue3。
 
 ## reactivity
 
