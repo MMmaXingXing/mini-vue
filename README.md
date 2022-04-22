@@ -33,11 +33,11 @@
 - [x]支持 slots 功能
 - [x]支持 Fragment 和 Text 类型节点
 - [x]支持 getCurrentInstance
-- [ ]支持 provide/inject
+- [x]支持 provide/inject
 
 ## runtime-dom
 
-- [ ]实现自定义渲染器 custom/renderer
+- [x]自定义渲染器(createReader) custom renderer
 - [ ]更新 element 流程搭建
 - [ ]更新 element props
 - [ ]更新 element children
