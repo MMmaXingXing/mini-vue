@@ -13,45 +13,59 @@ export const createRenderer = (options) => {
   } = options;
   const render = (vnode, container) => {
     // patch 调用patch方法
-    patch(vnode, container);
+    patch(null, vnode, container, null);
   };
 
-  const patch = (vnode, container, parentComponent = null) => {
+  // n1 --> 老
+  // n2 --> 新
+  const patch = (n1, n2, container, parentComponent = null) => {
     // 如何判断是不是element，
     // processElement()
-    const { type, shapeFlag } = vnode;
+    const { type, shapeFlag } = n2;
     switch (type) {
       case Fragment:
-        processFragment(vnode, container, parentComponent);
+        processFragment(n1, n2, container, parentComponent);
         break;
       case Text:
-        processText(vnode, container);
+        processText(n1, n2, container);
         break;
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
-          processElement(vnode, container, parentComponent);
+          processElement(n1, n2, container, parentComponent);
         } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-          processComponent(vnode, container, parentComponent);
+          processComponent(n1, n2, container, parentComponent);
         }
         break;
     }
   };
 
-  const processText = (vnode, container) => {
-    const { children } = vnode;
-    const textNode = (vnode.el = document.createTextNode(children));
+  const processText = (n1, n2, container) => {
+    const { children } = n2;
+    const textNode = (n2.el = document.createTextNode(children));
     container.append(textNode);
   };
 
-  const processFragment = (vnode, container, parentComponent) => {
+  const processFragment = (n1, n2, container, parentComponent) => {
     // Implemment
     // 将虚拟节点
-    mountChildren(vnode, container, parentComponent);
+    mountChildren(n2, container, parentComponent);
   };
 
-  const processElement = (vnode, container, parentComponent) => {
+  const processElement = (n1, n2, container, parentComponent) => {
     // init --> update
-    mountElement(vnode, container, parentComponent);
+    if (!n1) {
+      mountElement(n2, container, parentComponent);
+    } else {
+      patchElement(n1, n2, container);
+    }
+  };
+
+  const patchElement = (n1, n2, container) => {
+    console.log("patchElement");
+    console.log(n1);
+    console.log(n2);
+    // props
+    // children 更新对比
   };
 
   const mountElement = (vnode, container, parentComponent) => {
@@ -83,12 +97,12 @@ export const createRenderer = (options) => {
   // 进行深层vnode节点处理
   const mountChildren = (vnode, container, parentComponent) => {
     vnode.children.forEach((v) => {
-      patch(v, container, parentComponent);
+      patch(null, v, container, parentComponent);
     });
   };
 
-  const processComponent = (vnode, container, parentComponent) => {
-    mountComponent(vnode, container, parentComponent);
+  const processComponent = (n1, n2, container, parentComponent) => {
+    mountComponent(n2, container, parentComponent);
   };
 
   const mountComponent = (initnalVNode, container, parentComponent) => {
@@ -100,15 +114,23 @@ export const createRenderer = (options) => {
 
   const setupRenderEffect = (instance, initnalVNode, container) => {
     effect(() => {
-      const { proxy } = instance;
-      const subTree = instance.render.call(proxy);
-      console.log(subTree);
-      // vnode --> patch
-      // vnode --> element --> mountElement
-      patch(subTree, container, instance);
+      if (!instance.isMounted) {
+        const { proxy } = instance;
+        const subTree = (instance.subTree = instance.render.call(proxy));
+        // vnode --> patch
+        // vnode --> element --> mountElement
+        patch(null, subTree, container, instance);
 
-      // element --> mount
-      initnalVNode.el = subTree.el;
+        // element --> mount
+        initnalVNode.el = subTree.el;
+        instance.isMounted = true;
+      } else {
+        console.log("update");
+        const { proxy } = instance;
+        const subTree = instance.render.call(proxy);
+        const prevSubTree = instance.subTree;
+        patch(prevSubTree, subTree, container, instance);
+      }
     });
   };
 

@@ -69,7 +69,7 @@ export const track = (target, key) => {
 
 export const trackEffects = (dep) => {
   //  搜集依赖处理拆分为公共方法
-  debugger;
+  let deps: Array<any> = [];
   if (dep.has(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
@@ -88,8 +88,6 @@ export const trigger = (target, key) => {
 
 export const triggerEffects = (dep) => {
   for (const effect of dep) {
-    console.log(effect._fn);
-    debugger;
     if (effect.scheduler) {
       effect.scheduler();
     } else {
@@ -99,7 +97,6 @@ export const triggerEffects = (dep) => {
 };
 
 export const effect = (fn, options: any = {}) => {
-  debugger;
   const _effect = new ReactiveEffect(fn, options.scheduler);
   // options
   // Object.assign(_effect, options);

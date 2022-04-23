@@ -1,10 +1,10 @@
-var Fragment = Symbol("Fragment");
-var Text = Symbol("Text");
-var createVNode = function (type, props, children) {
-    var vnode = {
-        type: type,
-        props: props,
-        children: children,
+const Fragment = Symbol("Fragment");
+const Text = Symbol("Text");
+const createVNode = (type, props, children) => {
+    const vnode = {
+        type,
+        props,
+        children,
         shapeFlag: getShapeFlag(type),
         el: null
     };
@@ -23,61 +23,59 @@ var createVNode = function (type, props, children) {
     }
     return vnode;
 };
-var createTextVNode = function (text) {
+const createTextVNode = (text) => {
     return createVNode(Text, {}, text);
 };
-var getShapeFlag = function (type) {
+const getShapeFlag = (type) => {
     return typeof type === "string"
         ? 1 /* ELEMENT */
         : 2 /* STATEFUL_COMPONENT */;
 };
 
-var h = function (type, props, children) {
+const h = (type, props, children) => {
     return createVNode(type, props, children);
 };
 
-var renderSlots = function (slots, name, props) {
+const renderSlots = (slots, name, props) => {
     // 具名插槽
-    var slot = slots[name];
+    const slot = slots[name];
     if (slot) {
         return createVNode(Fragment, {}, slot(props));
     }
 };
 
-var extend = Object.assign;
-var isObject = function (val) {
+const extend = Object.assign;
+const isObject = (val) => {
     return val !== undefined && typeof val === "object";
 };
-var hasChange = function (value, newValue) {
+const hasChange = (value, newValue) => {
     return !Object.is(value, newValue);
 };
-var hasOwn = function (val, key) {
-    return Object.prototype.hasOwnProperty.call(val, key);
-};
-var camelize = function (str) {
+const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);
+const camelize = (str) => {
     // add-foo --> addFoo
-    return str.replace(/-(\w)/g, function (_, c) {
+    return str.replace(/-(\w)/g, (_, c) => {
         return c ? c.toUpperCase() : "";
     });
 };
-var capitalize = function (str) {
+const capitalize = (str) => {
     // add -> Add
     return str.charAt(0).toUpperCase() + str.slice(1);
 };
-var toHandlerKey = function (str) {
+const toHandlerKey = (str) => {
     return str ? "on" + capitalize(str) : "";
 };
 
-var activeEffect;
-var shouldTrack;
-var ReactiveEffect = /** @class */ (function () {
-    function ReactiveEffect(fn, scheduler) {
+let activeEffect;
+let shouldTrack;
+class ReactiveEffect {
+    constructor(fn, scheduler) {
         this.scheduler = scheduler;
         this.deps = [];
         this.active = true;
         this._fn = fn;
     }
-    ReactiveEffect.prototype.run = function () {
+    run() {
         // 执行fn但是不搜集依赖
         if (!this.active) {
             return this._fn();
@@ -85,11 +83,11 @@ var ReactiveEffect = /** @class */ (function () {
         // 可以开始搜集依赖了
         shouldTrack = true;
         activeEffect = this;
-        var result = this._fn();
+        const result = this._fn();
         shouldTrack = false;
         return result;
-    };
-    ReactiveEffect.prototype.stop = function () {
+    }
+    stop() {
         // 性能优化，增加一个active参数
         if (this.active) {
             cleanupEffect(this);
@@ -98,89 +96,79 @@ var ReactiveEffect = /** @class */ (function () {
             }
             this.active = false;
         }
-    };
-    return ReactiveEffect;
-}());
-var cleanupEffect = function (effect) {
-    effect.deps.forEach(function (dep) {
+    }
+}
+const cleanupEffect = (effect) => {
+    effect.deps.forEach((dep) => {
         dep.delete(effect);
     });
     effect.deps.length = 0;
 };
 // 每一个对象里面的每一个key，都需要有一个依赖搜集的容器，即有一个容器将我们传进来的fn存进去
-var targetMap = new Map();
-var track = function (target, key) {
+const targetMap = new Map();
+const track = (target, key) => {
     if (!isTracking())
         return;
     console.log(key);
     // target -> key -> dep
-    var depsMap = targetMap.get(target);
+    let depsMap = targetMap.get(target);
     if (!depsMap) {
         depsMap = new Map();
         targetMap.set(target, depsMap);
     }
-    var dep = depsMap.get(key);
+    let dep = depsMap.get(key);
     if (!dep) {
         dep = new Set();
         depsMap.set(key, dep);
     }
     trackEffects(dep);
 };
-var trackEffects = function (dep) {
-    //  搜集依赖处理拆分为公共方法
-    debugger;
+const trackEffects = (dep) => {
     if (dep.has(activeEffect))
         return;
     dep.add(activeEffect);
     activeEffect.deps.push(dep);
 };
-var isTracking = function () {
+const isTracking = () => {
     return shouldTrack && activeEffect !== undefined;
 };
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
-var trigger = function (target, key) {
-    var depsMap = targetMap.get(target);
-    var dep = depsMap.get(key);
+const trigger = (target, key) => {
+    let depsMap = targetMap.get(target);
+    let dep = depsMap.get(key);
     triggerEffects(dep);
 };
-var triggerEffects = function (dep) {
-    for (var _i = 0, dep_1 = dep; _i < dep_1.length; _i++) {
-        var effect_1 = dep_1[_i];
-        console.log(effect_1._fn);
-        debugger;
-        if (effect_1.scheduler) {
-            effect_1.scheduler();
+const triggerEffects = (dep) => {
+    for (const effect of dep) {
+        if (effect.scheduler) {
+            effect.scheduler();
         }
         else {
-            effect_1.run();
+            effect.run();
         }
     }
 };
-var effect = function (fn, options) {
-    if (options === void 0) { options = {}; }
-    debugger;
-    var _effect = new ReactiveEffect(fn, options.scheduler);
+const effect = (fn, options = {}) => {
+    const _effect = new ReactiveEffect(fn, options.scheduler);
     // options
     // Object.assign(_effect, options);
     extend(_effect, options);
     _effect.run();
     // 用户可以自行选择事件调用effect
-    var runner = _effect.run.bind(_effect);
+    const runner = _effect.run.bind(_effect);
     runner.effect = _effect;
     return runner;
 };
 
-var createGetter = function (isReadonly, shallow) {
-    if (isReadonly === void 0) { isReadonly = false; }
-    if (shallow === void 0) { shallow = false; }
-    return function (target, key) {
+const createGetter = (isReadonly = false, shallow = false) => {
+    return (target, key) => {
         if (key === ReactiveFlags.IS_REACTIVE) {
             return !isReadonly;
         }
         else if (key === ReactiveFlags.IS_READONLY) {
             return isReadonly;
         }
-        var res = Reflect.get(target, key);
+        const res = Reflect.get(target, key);
         if (shallow) {
             return res;
         }
@@ -193,30 +181,30 @@ var createGetter = function (isReadonly, shallow) {
         return res;
     };
 };
-var createSetter = function () {
-    return function (target, key, val) {
-        var res = Reflect.set(target, key, val);
+const createSetter = () => {
+    return (target, key, val) => {
+        const res = Reflect.set(target, key, val);
         // 触发依赖
         trigger(target, key);
         return res;
     };
 };
-var get = createGetter();
-var set = createSetter();
-var readonlyGet = createGetter(true);
-var shallowReadonlyGet = createGetter(true, true);
-var mutableHandlers = {
-    get: get,
-    set: set
+const get = createGetter();
+const set = createSetter();
+const readonlyGet = createGetter(true);
+const shallowReadonlyGet = createGetter(true, true);
+const mutableHandlers = {
+    get,
+    set
 };
-var readonlyHandlers = {
+const readonlyHandlers = {
     get: readonlyGet,
-    set: function (target, key) {
-        console.warn("key:".concat(key, "set\u5931\u8D25\uFF0C\u56E0\u4E3Atarget\u662Freadonly\uFF0C ").concat(target));
+    set(target, key) {
+        console.warn(`key:${key}set失败，因为target是readonly， ${target}`);
         return true;
     }
 };
-var shallowReadonlyHandlers = extend({}, readonlyHandlers, {
+const shallowReadonlyHandlers = extend({}, readonlyHandlers, {
     get: shallowReadonlyGet
 });
 
@@ -225,74 +213,69 @@ var ReactiveFlags;
     ReactiveFlags["IS_REACTIVE"] = "__v_isReactive";
     ReactiveFlags["IS_READONLY"] = "__v_isReadonly";
 })(ReactiveFlags || (ReactiveFlags = {}));
-var reactive = function (raw) {
+const reactive = (raw) => {
     return createActiveObject(raw, mutableHandlers);
 };
-var readonly = function (raw) {
+const readonly = (raw) => {
     return createActiveObject(raw, readonlyHandlers);
 };
-var shallowReadonly = function (raw) {
+const shallowReadonly = (raw) => {
     return createActiveObject(raw, shallowReadonlyHandlers);
 };
-var createActiveObject = function (target, baseHandler) {
+const createActiveObject = (target, baseHandler) => {
     if (!isObject(target)) {
         console.warn("target 必须是一个对象");
     }
     return new Proxy(target, baseHandler);
 };
 
-var RefImpl = /** @class */ (function () {
-    function RefImpl(value) {
+class RefImpl {
+    constructor(value) {
         this.__v_isRef = true;
         this._rawValue = value;
         this._value = convert(value);
         this.dep = new Set();
     }
-    Object.defineProperty(RefImpl.prototype, "value", {
-        get: function () {
-            // 依赖搜集
-            // if (isTracking()) {
-            //   trackEffects(this.dep);
-            // }
-            trackRefValue(this);
-            return this._value;
-        },
-        set: function (newValue) {
-            // if (Object.is(this._value, newValue)) return;
-            if (hasChange(this._rawValue, newValue)) {
-                this._rawValue = newValue;
-                this._value = convert(newValue);
-                triggerEffects(this.dep);
-            }
-        },
-        enumerable: false,
-        configurable: true
-    });
-    return RefImpl;
-}());
-var convert = function (value) {
+    get value() {
+        // 依赖搜集
+        // if (isTracking()) {
+        //   trackEffects(this.dep);
+        // }
+        trackRefValue(this);
+        return this._value;
+    }
+    set value(newValue) {
+        // if (Object.is(this._value, newValue)) return;
+        if (hasChange(this._rawValue, newValue)) {
+            this._rawValue = newValue;
+            this._value = convert(newValue);
+            triggerEffects(this.dep);
+        }
+    }
+}
+const convert = (value) => {
     return isObject(value) ? reactive(value) : value;
 };
-var trackRefValue = function (ref) {
+const trackRefValue = (ref) => {
     if (isTracking()) {
         trackEffects(ref.dep);
     }
 };
-var ref = function (value) {
+const ref = (value) => {
     return new RefImpl(value);
 };
-var isRef = function (ref) {
+const isRef = (ref) => {
     return !!ref.__v_isRef;
 };
-var unRef = function (ref) {
+const unRef = (ref) => {
     return isRef(ref) ? ref.value : ref;
 };
-var proxyRefs = function (objectWithRef) {
+const proxyRefs = (objectWithRef) => {
     return new Proxy(objectWithRef, {
-        get: function (target, key) {
+        get(target, key) {
             return unRef(Reflect.get(target, key));
         },
-        set: function (target, key, value) {
+        set(target, key, value) {
             if (isRef(target[key]) && !isRef(value)) {
                 return (target[key].value = value);
             }
@@ -303,43 +286,38 @@ var proxyRefs = function (objectWithRef) {
     });
 };
 
-var emit = function (instance, event) {
-    var args = [];
-    for (var _i = 2; _i < arguments.length; _i++) {
-        args[_i - 2] = arguments[_i];
-    }
+const emit = (instance, event, ...args) => {
     console.log("emit", event);
     // instance.props --> event
-    var props = instance.props;
+    const { props } = instance;
     // TPP
     // 先写成一个特定的行为 --> 重构成通用的行文
     // add
     // const handler = props["onAdd"];
     // handler && handler();
-    var handlerName = toHandlerKey(camelize(event));
-    var handler = props[handlerName];
-    handler & handler.apply(void 0, args);
+    const handlerName = toHandlerKey(camelize(event));
+    const handler = props[handlerName];
+    handler & handler(...args);
 };
 
-var initProps = function (instance, rawProps) {
+const initProps = (instance, rawProps) => {
     instance.props = rawProps || {};
 };
 
-var publicPropertiesMap = {
-    $el: function (i) { return i.vnode.el; },
-    $slots: function (i) { return i.slots; }
+const publicPropertiesMap = {
+    $el: (i) => i.vnode.el,
+    $slots: (i) => i.slots
 };
-var PublicInstanceProxyHandlers = {
-    get: function (_a, key) {
-        var instance = _a._;
-        var setupState = instance.setupState, props = instance.props;
+const PublicInstanceProxyHandlers = {
+    get({ _: instance }, key) {
+        const { setupState, props } = instance;
         if (hasOwn(setupState, key)) {
             return setupState[key];
         }
         else if (hasOwn(props, key)) {
             return props[key];
         }
-        var publicGetter = publicPropertiesMap[key];
+        const publicGetter = publicPropertiesMap[key];
         if (publicGetter) {
             return publicGetter(instance);
         }
@@ -348,63 +326,62 @@ var PublicInstanceProxyHandlers = {
     }
 };
 
-var initSlots = function (instance, children) {
+const initSlots = (instance, children) => {
     // 数组类型结构渲染
     // instance.slots = Array.isArray(children) ? children : [children];
-    var vnode = instance.vnode;
+    const { vnode } = instance;
     if (vnode.shapeFlag & 16 /* SLOT_CHILDREN */) {
         normalizeObjectSlots(children, instance.slots);
     }
 };
-var normalizeObjectSlots = function (children, slots) {
-    var _loop_1 = function (key) {
-        var value = children[key];
-        slots[key] = function (props) { return normalizeSlotValue(value(props)); };
-    };
-    for (var key in children) {
-        _loop_1(key);
+const normalizeObjectSlots = (children, slots) => {
+    for (const key in children) {
+        const value = children[key];
+        slots[key] = (props) => normalizeSlotValue(value(props));
     }
     slots = slots;
 };
-var normalizeSlotValue = function (value) {
+const normalizeSlotValue = (value) => {
     return Array.isArray(value) ? value : [value];
 };
 
-var createComponentInstance = function (vnode, parent) {
-    var component = {
-        vnode: vnode,
+const createComponentInstance = (vnode, parent) => {
+    const component = {
+        vnode,
         type: vnode.type,
         setupState: {},
         props: {},
         slots: {},
         provides: parent ? parent.provides : {},
-        parent: parent,
+        parent,
         proxy: null,
-        emit: function () { }
+        isMounted: false,
+        subtree: {},
+        emit: () => { }
     };
     component.emit = emit.bind(null, component);
     return component;
 };
-var setupComponent = function (instance) {
+const setupComponent = (instance) => {
     initProps(instance, instance.vnode.props);
     initSlots(instance, instance.vnode.children);
     // 初始化有状态的函数式组件
     setupStatefulComponent(instance);
 };
-var setupStatefulComponent = function (instance) {
-    var Component = instance.type;
+const setupStatefulComponent = (instance) => {
+    const Component = instance.type;
     // ctx
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
-    var setup = Component.setup;
+    const { setup } = Component;
     if (setup) {
         setCurrentInstance(instance);
-        var setupResult = setup(shallowReadonly(instance.props), {
+        const setupResult = setup(shallowReadonly(instance.props), {
             emit: instance.emit
         });
         handleSetupResult(instance, setupResult);
     }
 };
-var handleSetupResult = function (instance, steupResult) {
+const handleSetupResult = (instance, steupResult) => {
     // function Object
     // TODO function
     if (typeof steupResult === "object") {
@@ -412,27 +389,27 @@ var handleSetupResult = function (instance, steupResult) {
     }
     finishComponentSetup(instance);
 };
-var finishComponentSetup = function (instance) {
-    var Component = instance.type;
+const finishComponentSetup = (instance) => {
+    const Component = instance.type;
     //   if (Component.render) {
     instance.render = Component.render;
     //   }
 };
-var currentInstance = null;
-var getCurrentInstance = function () {
+let currentInstance = null;
+const getCurrentInstance = () => {
     return currentInstance;
 };
-var setCurrentInstance = function (instance) {
+const setCurrentInstance = (instance) => {
     currentInstance = instance;
 };
 
-var provide = function (key, value) {
+const provide = (key, value) => {
     var _a;
-    var currentInstance = getCurrentInstance();
+    const currentInstance = getCurrentInstance();
     if (currentInstance) {
-        var provides = currentInstance.provides;
+        let { provides } = currentInstance;
         // 使用原型链改写
-        var parentProvides = (_a = currentInstance.parent) === null || _a === void 0 ? void 0 : _a.provides;
+        const parentProvides = (_a = currentInstance.parent) === null || _a === void 0 ? void 0 : _a.provides;
         if (provides === parentProvides) {
             // 初始化操作只在init做
             provides = currentInstance.provides = Object.create(parentProvides);
@@ -440,10 +417,10 @@ var provide = function (key, value) {
         provides[key] = value;
     }
 };
-var inject = function (key, defaultValue) {
-    var currentInstance = getCurrentInstance();
+const inject = (key, defaultValue) => {
+    const currentInstance = getCurrentInstance();
     if (currentInstance) {
-        var parentProvide = currentInstance.parent;
+        const parentProvide = currentInstance.parent;
         if (key in parentProvide) {
             return parentProvide[key];
         }
@@ -456,14 +433,14 @@ var inject = function (key, defaultValue) {
     }
 };
 
-var createAppAPI = function (render) {
-    var createApp = function (rootComponent) {
+const createAppAPI = (render) => {
+    const createApp = (rootComponent) => {
         return {
-            mount: function (rootContainer) {
+            mount(rootContainer) {
                 // 先转换为 vnode
                 // component --> vnode
                 // 所有逻辑操作都会基于虚拟节点来做处理
-                var vnode = createVNode(rootComponent);
+                const vnode = createVNode(rootComponent);
                 render(vnode, rootContainer);
             }
         };
@@ -471,54 +448,67 @@ var createAppAPI = function (render) {
     return createApp;
 };
 
-var createRenderer = function (options) {
-    var hostCreateElement = options.createElement, hostPatchProp = options.patchProp, hostInsert = options.insert;
-    var render = function (vnode, container) {
+const createRenderer = (options) => {
+    const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert } = options;
+    const render = (vnode, container) => {
         // patch 调用patch方法
-        patch(vnode, container);
+        patch(null, vnode, container, null);
     };
-    var patch = function (vnode, container, parentComponent) {
-        if (parentComponent === void 0) { parentComponent = null; }
+    // n1 --> 老
+    // n2 --> 新
+    const patch = (n1, n2, container, parentComponent = null) => {
         // 如何判断是不是element，
         // processElement()
-        var type = vnode.type, shapeFlag = vnode.shapeFlag;
+        const { type, shapeFlag } = n2;
         switch (type) {
             case Fragment:
-                processFragment(vnode, container, parentComponent);
+                processFragment(n1, n2, container, parentComponent);
                 break;
             case Text:
-                processText(vnode, container);
+                processText(n1, n2, container);
                 break;
             default:
                 if (shapeFlag & 1 /* ELEMENT */) {
-                    processElement(vnode, container, parentComponent);
+                    processElement(n1, n2, container, parentComponent);
                 }
                 else if (shapeFlag & 2 /* STATEFUL_COMPONENT */) {
-                    processComponent(vnode, container, parentComponent);
+                    processComponent(n1, n2, container, parentComponent);
                 }
                 break;
         }
     };
-    var processText = function (vnode, container) {
-        var children = vnode.children;
-        var textNode = (vnode.el = document.createTextNode(children));
+    const processText = (n1, n2, container) => {
+        const { children } = n2;
+        const textNode = (n2.el = document.createTextNode(children));
         container.append(textNode);
     };
-    var processFragment = function (vnode, container, parentComponent) {
+    const processFragment = (n1, n2, container, parentComponent) => {
         // Implemment
         // 将虚拟节点
-        mountChildren(vnode, container, parentComponent);
+        mountChildren(n2, container, parentComponent);
     };
-    var processElement = function (vnode, container, parentComponent) {
+    const processElement = (n1, n2, container, parentComponent) => {
         // init --> update
-        mountElement(vnode, container, parentComponent);
+        if (!n1) {
+            mountElement(n2, container, parentComponent);
+        }
+        else {
+            patchElement(n1, n2);
+        }
     };
-    var mountElement = function (vnode, container, parentComponent) {
+    const patchElement = (n1, n2, container) => {
+        console.log("patchElement");
+        console.log(n1);
+        console.log(n2);
+        // props
+        // children 更新对比
+    };
+    const mountElement = (vnode, container, parentComponent) => {
         // 这里的vnode --> element --> div
-        var el = (vnode.el = hostCreateElement(vnode.type));
+        const el = (vnode.el = hostCreateElement(vnode.type));
         // 子元素节点处理
         // string array
-        var children = vnode.children, shapeFlag = vnode.shapeFlag;
+        const { children, shapeFlag } = vnode;
         if (shapeFlag & 4 /* TEXT_CHILDREN */) {
             el.textContent = children;
         }
@@ -527,9 +517,9 @@ var createRenderer = function (options) {
             mountChildren(vnode, el, parentComponent);
         }
         // props参数处理
-        var props = vnode.props;
-        for (var key in props) {
-            var val = props[key];
+        const { props } = vnode;
+        for (const key in props) {
+            const val = props[key];
             hostPatchProp(el, key, val);
         }
         // el.setAttribute("id", "root");
@@ -537,29 +527,38 @@ var createRenderer = function (options) {
         hostInsert(el, container);
     };
     // 进行深层vnode节点处理
-    var mountChildren = function (vnode, container, parentComponent) {
-        vnode.children.forEach(function (v) {
-            patch(v, container, parentComponent);
+    const mountChildren = (vnode, container, parentComponent) => {
+        vnode.children.forEach((v) => {
+            patch(null, v, container, parentComponent);
         });
     };
-    var processComponent = function (vnode, container, parentComponent) {
-        mountComponent(vnode, container, parentComponent);
+    const processComponent = (n1, n2, container, parentComponent) => {
+        mountComponent(n2, container, parentComponent);
     };
-    var mountComponent = function (initnalVNode, container, parentComponent) {
-        var instance = createComponentInstance(initnalVNode, parentComponent);
+    const mountComponent = (initnalVNode, container, parentComponent) => {
+        const instance = createComponentInstance(initnalVNode, parentComponent);
         setupComponent(instance);
         setupRenderEffect(instance, initnalVNode, container);
     };
-    var setupRenderEffect = function (instance, initnalVNode, container) {
-        effect(function () {
-            var proxy = instance.proxy;
-            var subTree = instance.render.call(proxy);
-            console.log(subTree);
-            // vnode --> patch
-            // vnode --> element --> mountElement
-            patch(subTree, container, instance);
-            // element --> mount
-            initnalVNode.el = subTree.el;
+    const setupRenderEffect = (instance, initnalVNode, container) => {
+        effect(() => {
+            if (!instance.isMounted) {
+                const { proxy } = instance;
+                const subTree = (instance.subTree = instance.render.call(proxy));
+                // vnode --> patch
+                // vnode --> element --> mountElement
+                patch(null, subTree, container, instance);
+                // element --> mount
+                initnalVNode.el = subTree.el;
+                instance.isMounted = true;
+            }
+            else {
+                console.log("update");
+                const { proxy } = instance;
+                const subTree = instance.render.call(proxy);
+                const prevSubTree = instance.subTree;
+                patch(prevSubTree, subTree, container, instance);
+            }
         });
     };
     return {
@@ -567,36 +566,32 @@ var createRenderer = function (options) {
     };
 };
 
-var createElement = function (type) {
+const createElement = (type) => {
     console.log("createElement-----------------------");
     return document.createElement(type);
 };
-var patchProp = function (el, key, val) {
+const patchProp = (el, key, val) => {
     console.log("patchProp-----------------------");
-    var isOn = function (key) { return /^on[A-Z]/.test(key); };
+    const isOn = (key) => /^on[A-Z]/.test(key);
     if (isOn(key)) {
-        var event_1 = key.slice(2).toLowerCase();
-        el.addEventListener(event_1, val);
+        const event = key.slice(2).toLowerCase();
+        el.addEventListener(event, val);
     }
     else {
         el.setAttribute(key, val);
     }
 };
-var insert = function (el, container) {
+const insert = (el, container) => {
     console.log("insert-----------------------");
     container.append(el);
 };
-var renderer = createRenderer({
-    createElement: createElement,
-    patchProp: patchProp,
-    insert: insert
+const renderer = createRenderer({
+    createElement,
+    patchProp,
+    insert
 });
-var createApp = function () {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
-    }
-    return renderer.createApp.apply(renderer, args);
+const createApp = (...args) => {
+    return renderer.createApp(...args);
 };
 
 export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots };

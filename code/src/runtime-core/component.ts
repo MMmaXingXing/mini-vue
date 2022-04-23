@@ -15,6 +15,8 @@ export const createComponentInstance = (vnode, parent) => {
     provides: parent ? parent.provides : {},
     parent,
     proxy: null,
+    isMounted: false,
+    subtree: {},
     emit: () => {}
   };
 
