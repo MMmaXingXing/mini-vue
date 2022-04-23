@@ -4,7 +4,6 @@ import {
   readonlyHandlers,
   shallowReadonlyHandlers
 } from "./baseHandlers";
-import { track, trigger } from "./effect";
 
 export enum ReactiveFlags {
   IS_REACTIVE = "__v_isReactive",

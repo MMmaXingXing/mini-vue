@@ -12,10 +12,12 @@ export class ReactiveEffect {
   }
 
   run() {
+    // 执行fn但是不搜集依赖
     if (!this.active) {
       return this._fn();
     }
 
+    // 可以开始搜集依赖了
     shouldTrack = true;
     activeEffect = this;
 
@@ -48,6 +50,8 @@ const targetMap = new Map();
 export const track = (target, key) => {
   if (!isTracking()) return;
 
+  console.log(key);
+
   // target -> key -> dep
   let depsMap = targetMap.get(target);
   if (!depsMap) {
@@ -65,6 +69,7 @@ export const track = (target, key) => {
 
 export const trackEffects = (dep) => {
   //  搜集依赖处理拆分为公共方法
+  debugger;
   if (dep.has(activeEffect)) return;
   dep.add(activeEffect);
   activeEffect.deps.push(dep);
@@ -83,6 +88,8 @@ export const trigger = (target, key) => {
 
 export const triggerEffects = (dep) => {
   for (const effect of dep) {
+    console.log(effect._fn);
+    debugger;
     if (effect.scheduler) {
       effect.scheduler();
     } else {
@@ -92,11 +99,14 @@ export const triggerEffects = (dep) => {
 };
 
 export const effect = (fn, options: any = {}) => {
+  debugger;
   const _effect = new ReactiveEffect(fn, options.scheduler);
   // options
   // Object.assign(_effect, options);
   extend(_effect, options);
   _effect.run();
+
+  // 用户可以自行选择事件调用effect
   const runner: any = _effect.run.bind(_effect);
   runner.effect = _effect;
   return runner;

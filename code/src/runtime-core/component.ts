@@ -1,4 +1,5 @@
 import { shallowReadonly } from "../reactivity/reactive";
+import { proxyRefs } from "../reactivity/ref";
 import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
@@ -50,7 +51,7 @@ const handleSetupResult = (instance, steupResult: any) => {
   // TODO function
 
   if (typeof steupResult === "object") {
-    instance.setupState = steupResult;
+    instance.setupState = proxyRefs(steupResult);
   }
 
   finishComponentSetup(instance);

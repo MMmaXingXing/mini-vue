@@ -1,5 +1,6 @@
 import { visitNodes } from "../../node_modules/typescript/lib/typescript";
 import { ShapeFlags } from "../../shared/ShapeFlags";
+import { effect } from "../reactivity/effect";
 import { createComponentInstance, setupComponent } from "./component";
 import { createAppAPI } from "./cretaeApp";
 import { Fragment, Text } from "./vnode";
@@ -98,14 +99,17 @@ export const createRenderer = (options) => {
   };
 
   const setupRenderEffect = (instance, initnalVNode, container) => {
-    const { proxy } = instance;
-    const subTree = instance.render.call(proxy);
-    // vnode --> patch
-    // vnode --> element --> mountElement
-    patch(subTree, container, instance);
+    effect(() => {
+      const { proxy } = instance;
+      const subTree = instance.render.call(proxy);
+      console.log(subTree);
+      // vnode --> patch
+      // vnode --> element --> mountElement
+      patch(subTree, container, instance);
 
-    // element --> mount
-    initnalVNode.el = subTree.el;
+      // element --> mount
+      initnalVNode.el = subTree.el;
+    });
   };
 
   return {

@@ -48,6 +48,9 @@ var extend = Object.assign;
 var isObject = function (val) {
     return val !== undefined && typeof val === "object";
 };
+var hasChange = function (value, newValue) {
+    return !Object.is(value, newValue);
+};
 var hasOwn = function (val, key) {
     return Object.prototype.hasOwnProperty.call(val, key);
 };
@@ -65,8 +68,75 @@ var toHandlerKey = function (str) {
     return str ? "on" + capitalize(str) : "";
 };
 
+var activeEffect;
+var shouldTrack;
+var ReactiveEffect = /** @class */ (function () {
+    function ReactiveEffect(fn, scheduler) {
+        this.scheduler = scheduler;
+        this.deps = [];
+        this.active = true;
+        this._fn = fn;
+    }
+    ReactiveEffect.prototype.run = function () {
+        // 执行fn但是不搜集依赖
+        if (!this.active) {
+            return this._fn();
+        }
+        // 可以开始搜集依赖了
+        shouldTrack = true;
+        activeEffect = this;
+        var result = this._fn();
+        shouldTrack = false;
+        return result;
+    };
+    ReactiveEffect.prototype.stop = function () {
+        // 性能优化，增加一个active参数
+        if (this.active) {
+            cleanupEffect(this);
+            if (this.onStop) {
+                this.onStop();
+            }
+            this.active = false;
+        }
+    };
+    return ReactiveEffect;
+}());
+var cleanupEffect = function (effect) {
+    effect.deps.forEach(function (dep) {
+        dep.delete(effect);
+    });
+    effect.deps.length = 0;
+};
 // 每一个对象里面的每一个key，都需要有一个依赖搜集的容器，即有一个容器将我们传进来的fn存进去
 var targetMap = new Map();
+var track = function (target, key) {
+    if (!isTracking())
+        return;
+    console.log(key);
+    // target -> key -> dep
+    var depsMap = targetMap.get(target);
+    if (!depsMap) {
+        depsMap = new Map();
+        targetMap.set(target, depsMap);
+    }
+    var dep = depsMap.get(key);
+    if (!dep) {
+        dep = new Set();
+        depsMap.set(key, dep);
+    }
+    trackEffects(dep);
+};
+var trackEffects = function (dep) {
+    //  搜集依赖处理拆分为公共方法
+    debugger;
+    if (dep.has(activeEffect))
+        return;
+    dep.add(activeEffect);
+    activeEffect.deps.push(dep);
+};
+var isTracking = function () {
+    return shouldTrack && activeEffect !== undefined;
+};
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
 var trigger = function (target, key) {
     var depsMap = targetMap.get(target);
@@ -76,6 +146,8 @@ var trigger = function (target, key) {
 var triggerEffects = function (dep) {
     for (var _i = 0, dep_1 = dep; _i < dep_1.length; _i++) {
         var effect_1 = dep_1[_i];
+        console.log(effect_1._fn);
+        debugger;
         if (effect_1.scheduler) {
             effect_1.scheduler();
         }
@@ -83,6 +155,19 @@ var triggerEffects = function (dep) {
             effect_1.run();
         }
     }
+};
+var effect = function (fn, options) {
+    if (options === void 0) { options = {}; }
+    debugger;
+    var _effect = new ReactiveEffect(fn, options.scheduler);
+    // options
+    // Object.assign(_effect, options);
+    extend(_effect, options);
+    _effect.run();
+    // 用户可以自行选择事件调用effect
+    var runner = _effect.run.bind(_effect);
+    runner.effect = _effect;
+    return runner;
 };
 
 var createGetter = function (isReadonly, shallow) {
@@ -102,6 +187,9 @@ var createGetter = function (isReadonly, shallow) {
         if (isObject(res)) {
             return isReadonly ? readonly(res) : reactive(res);
         }
+        // 依赖搜集
+        if (!isReadonly)
+            track(target, key);
         return res;
     };
 };
@@ -151,6 +239,68 @@ var createActiveObject = function (target, baseHandler) {
         console.warn("target 必须是一个对象");
     }
     return new Proxy(target, baseHandler);
+};
+
+var RefImpl = /** @class */ (function () {
+    function RefImpl(value) {
+        this.__v_isRef = true;
+        this._rawValue = value;
+        this._value = convert(value);
+        this.dep = new Set();
+    }
+    Object.defineProperty(RefImpl.prototype, "value", {
+        get: function () {
+            // 依赖搜集
+            // if (isTracking()) {
+            //   trackEffects(this.dep);
+            // }
+            trackRefValue(this);
+            return this._value;
+        },
+        set: function (newValue) {
+            // if (Object.is(this._value, newValue)) return;
+            if (hasChange(this._rawValue, newValue)) {
+                this._rawValue = newValue;
+                this._value = convert(newValue);
+                triggerEffects(this.dep);
+            }
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return RefImpl;
+}());
+var convert = function (value) {
+    return isObject(value) ? reactive(value) : value;
+};
+var trackRefValue = function (ref) {
+    if (isTracking()) {
+        trackEffects(ref.dep);
+    }
+};
+var ref = function (value) {
+    return new RefImpl(value);
+};
+var isRef = function (ref) {
+    return !!ref.__v_isRef;
+};
+var unRef = function (ref) {
+    return isRef(ref) ? ref.value : ref;
+};
+var proxyRefs = function (objectWithRef) {
+    return new Proxy(objectWithRef, {
+        get: function (target, key) {
+            return unRef(Reflect.get(target, key));
+        },
+        set: function (target, key, value) {
+            if (isRef(target[key]) && !isRef(value)) {
+                return (target[key].value = value);
+            }
+            else {
+                return Reflect.set(target, key, value);
+            }
+        }
+    });
 };
 
 var emit = function (instance, event) {
@@ -258,7 +408,7 @@ var handleSetupResult = function (instance, steupResult) {
     // function Object
     // TODO function
     if (typeof steupResult === "object") {
-        instance.setupState = steupResult;
+        instance.setupState = proxyRefs(steupResult);
     }
     finishComponentSetup(instance);
 };
@@ -401,13 +551,16 @@ var createRenderer = function (options) {
         setupRenderEffect(instance, initnalVNode, container);
     };
     var setupRenderEffect = function (instance, initnalVNode, container) {
-        var proxy = instance.proxy;
-        var subTree = instance.render.call(proxy);
-        // vnode --> patch
-        // vnode --> element --> mountElement
-        patch(subTree, container, instance);
-        // element --> mount
-        initnalVNode.el = subTree.el;
+        effect(function () {
+            var proxy = instance.proxy;
+            var subTree = instance.render.call(proxy);
+            console.log(subTree);
+            // vnode --> patch
+            // vnode --> element --> mountElement
+            patch(subTree, container, instance);
+            // element --> mount
+            initnalVNode.el = subTree.el;
+        });
     };
     return {
         createApp: createAppAPI(render)
@@ -446,4 +599,4 @@ var createApp = function () {
     return renderer.createApp.apply(renderer, args);
 };
 
-export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, renderSlots };
+export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots };
