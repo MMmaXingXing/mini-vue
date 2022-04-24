@@ -22,41 +22,41 @@
 
 ## runtime-core
 
-- [x]初始化 Component
-- [x]支持 rollup 打包
-- [x]初始化 element 主流程
-- [x]支持 组件代理对象
-- [x]支持 shapeFlags
-- [x]支持 注册事件功能
-- [x]实现 组件 props 逻辑
-- [x]实现 组件 emit 功能
-- [x]支持 slots 功能
-- [x]支持 Fragment 和 Text 类型节点
-- [x]支持 getCurrentInstance
-- [x]支持 provide/inject
+- [x] 初始化 Component
+- [x] 支持 rollup 打包
+- [x] 初始化 element 主流程
+- [x] 支持 组件代理对象
+- [x] 支持 shapeFlags
+- [x] 支持 注册事件功能
+- [x] 实现 组件 props 逻辑
+- [x] 实现 组件 emit 功能
+- [x] 支持 slots 功能
+- [x] 支持 Fragment 和 Text 类型节点
+- [x] 支持 getCurrentInstance
+- [x] 支持 provide/inject
 
 ## runtime-dom
 
-- [x]自定义渲染器(createReader) custom renderer
-- [ ]更新 element 流程搭建
-- [ ]更新 element props
-- [ ]更新 element children
-- [ ]实现 双端对比 diff 算法
-- [ ]实现 组件更新
-- [ ]支持 nextTick
+- [x] 自定义渲染器(createReader) custom renderer
+- [ ] 更新 element 流程搭建
+- [ ] 更新 element props
+- [ ] 更新 element children
+- [ ] 实现 双端对比 diff 算法
+- [ ] 实现 组件更新
+- [ ] 支持 nextTick
 
 ## compiler-core
 
-- [ ]实现 解析插值功能
-- [ ]实现 解析 element 标签
-- [ ]实现 解析 text 功能
-- [ ]实现 解析三种联合类型
-- [ ]实现 parse&有限状态机
-- [ ]实现 transform
-- [ ]实现 代码生成 string 类型
-- [ ]实现 代码生成插值类型 cmproj
-- [ ]实现 代码生成三种联合类型
-- [ ]实现 编译 template 成 render 函数
+- [ ] 实现 解析插值功能
+- [ ] 实现 解析 element 标签
+- [ ] 实现 解析 text 功能
+- [ ] 实现 解析三种联合类型
+- [ ] 实现 parse&有限状态机
+- [ ] 实现 transform
+- [ ] 实现 代码生成 string 类型
+- [ ] 实现 代码生成插值类型 cmproj
+- [ ] 实现 代码生成三种联合类型
+- [ ] 实现 编译 template 成 render 函数
 
 ## build
 
