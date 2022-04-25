@@ -1,4 +1,4 @@
-import { h, ref } from "../../lib/guide-mini-vue.esm.js";
+import { h, ref, effect } from "../../lib/guide-mini-vue.esm.js";
 
 export const App = {
   name: "App",
@@ -7,11 +7,8 @@ export const App = {
       foo: "foo",
       bar: "bar"
     });
-    console.log(propsToAttrMap);
 
     const onChangePropsDemo1 = () => {
-      debugger;
-      // console.log(propsToAttrMap);
       console.log(propsToAttrMap.value.foo);
       propsToAttrMap.value.foo = "new-foo";
     };
@@ -28,16 +25,20 @@ export const App = {
     return {
       onChangePropsDemo1,
       onChangePropsDemo2,
-      onChangePropsDemo3
+      onChangePropsDemo3,
+      propsToAttrMap
     };
   },
   render() {
     return h(
       "div",
       {
-        id: "root"
+        id: "root",
+        foo: this.propsToAttrMap.foo,
+        bar: this.propsToAttrMap.bar
       },
       [
+        h("span", {}, this.propsToAttrMap.foo),
         h(
           "button",
           { onClick: this.onChangePropsDemo1 },

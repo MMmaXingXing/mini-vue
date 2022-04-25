@@ -83,7 +83,7 @@ export const isTracking = () => {
 export const trigger = (target, key) => {
   let depsMap = targetMap?.get(target);
   let dep = depsMap?.get(key);
-  triggerEffects(dep);
+  triggerEffects(new Set(dep));
 };
 export const triggerEffects = (dep) => {
   for (const effect of dep) {

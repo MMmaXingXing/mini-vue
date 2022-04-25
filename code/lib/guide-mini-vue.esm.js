@@ -45,6 +45,7 @@ const renderSlots = (slots, name, props) => {
 };
 
 const extend = Object.assign;
+const EMPTY_OBJ = {};
 const isObject = (val) => {
     return val !== undefined && typeof val === "object";
 };
@@ -136,7 +137,7 @@ const isTracking = () => {
 const trigger = (target, key) => {
     let depsMap = targetMap === null || targetMap === void 0 ? void 0 : targetMap.get(target);
     let dep = depsMap === null || depsMap === void 0 ? void 0 : depsMap.get(key);
-    triggerEffects(dep);
+    triggerEffects(new Set(dep));
 };
 const triggerEffects = (dep) => {
     for (const effect of dep) {
@@ -500,8 +501,32 @@ const createRenderer = (options) => {
         console.log("patchElement");
         console.log(n1);
         console.log(n2);
+        const oldProps = n1.props || EMPTY_OBJ;
+        const newProps = n2.props || EMPTY_OBJ;
+        //
+        const el = (n2.el = n1.el);
+        patchProps(el, oldProps, newProps);
         // props
         // children 更新对比
+    };
+    const patchProps = (el, oldProps, newProps) => {
+        // 新老节点对比，来查看值是否一样，如果不一样则触发修改
+        if (oldProps !== newProps) {
+            for (const key in newProps) {
+                const prevProp = oldProps[key];
+                const nextProp = newProps[key];
+                if (prevProp !== nextProp) {
+                    hostPatchProp(el, key, prevProp, nextProp);
+                }
+            }
+            if (oldProps !== EMPTY_OBJ) {
+                for (const key in oldProps) {
+                    if (!(key in oldProps)) {
+                        hostPatchProp(el, key, oldProps[key], null);
+                    }
+                }
+            }
+        }
     };
     const mountElement = (vnode, container, parentComponent) => {
         // 这里的vnode --> element --> div
@@ -520,7 +545,7 @@ const createRenderer = (options) => {
         const { props } = vnode;
         for (const key in props) {
             const val = props[key];
-            hostPatchProp(el, key, val);
+            hostPatchProp(el, key, null, val);
         }
         // el.setAttribute("id", "root");
         // document.body.append(el);
@@ -570,17 +595,22 @@ const createElement = (type) => {
     console.log("createElement-----------------------");
     return document.createElement(type);
 };
-const patchProp = (el, key, val) => {
+function patchProp(el, key, prevProp, nextVal) {
     console.log("patchProp-----------------------");
     const isOn = (key) => /^on[A-Z]/.test(key);
     if (isOn(key)) {
         const event = key.slice(2).toLowerCase();
-        el.addEventListener(event, val);
+        el.addEventListener(event, nextVal);
     }
     else {
-        el.setAttribute(key, val);
+        if (nextVal === null || nextVal == undefined) {
+            el.removeAttribute(key);
+        }
+        else {
+            el.setAttribute(key, nextVal);
+        }
     }
-};
+}
 const insert = (el, container) => {
     console.log("insert-----------------------");
     container.append(el);
@@ -594,4 +624,4 @@ const createApp = (...args) => {
     return renderer.createApp(...args);
 };
 
-export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots };
+export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots };

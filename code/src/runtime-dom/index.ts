@@ -5,16 +5,20 @@ export const createElement = (type) => {
   return document.createElement(type);
 };
 
-export const patchProp = (el, key, val) => {
+export function patchProp(el, key, prevProp, nextVal) {
   console.log("patchProp-----------------------");
   const isOn = (key: string) => /^on[A-Z]/.test(key);
   if (isOn(key)) {
     const event = key.slice(2).toLowerCase();
-    el.addEventListener(event, val);
+    el.addEventListener(event, nextVal);
   } else {
-    el.setAttribute(key, val);
+    if (nextVal === null || nextVal == undefined) {
+      el.removeAttribute(key);
+    } else {
+      el.setAttribute(key, nextVal);
+    }
   }
-};
+}
 
 export const insert = (el, container) => {
   console.log("insert-----------------------");

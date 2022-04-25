@@ -1,4 +1,4 @@
-import { visitNodes } from "../../node_modules/typescript/lib/typescript";
+import { EMPTY_OBJ } from "../../shared";
 import { ShapeFlags } from "../../shared/ShapeFlags";
 import { effect } from "../reactivity/effect";
 import { createComponentInstance, setupComponent } from "./component";
@@ -64,8 +64,35 @@ export const createRenderer = (options) => {
     console.log("patchElement");
     console.log(n1);
     console.log(n2);
+    const oldProps = n1.props || EMPTY_OBJ;
+    const newProps = n2.props || EMPTY_OBJ;
+    //
+
+    const el = (n2.el = n1.el);
+    patchProps(el, oldProps, newProps);
     // props
     // children 更新对比
+  };
+
+  const patchProps = (el, oldProps, newProps) => {
+    // 新老节点对比，来查看值是否一样，如果不一样则触发修改
+    if (oldProps !== newProps) {
+      for (const key in newProps) {
+        const prevProp = oldProps[key];
+        const nextProp = newProps[key];
+        if (prevProp !== nextProp) {
+          hostPatchProp(el, key, prevProp, nextProp);
+        }
+      }
+
+      if (oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          if (!(key in oldProps)) {
+            hostPatchProp(el, key, oldProps[key], null);
+          }
+        }
+      }
+    }
   };
 
   const mountElement = (vnode, container, parentComponent) => {
@@ -86,7 +113,7 @@ export const createRenderer = (options) => {
     const { props } = vnode;
     for (const key in props) {
       const val = props[key];
-      hostPatchProp(el, key, val);
+      hostPatchProp(el, key, null, val);
     }
 
     // el.setAttribute("id", "root");
