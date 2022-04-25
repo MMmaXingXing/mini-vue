@@ -70,8 +70,8 @@ const toHandlerKey = (str) => {
     return str ? "on" + capitalize(str) : "";
 };
 
-let activeEffect;
-let shouldTrack;
+let activeEffect = void 0;
+let shouldTrack = false;
 class ReactiveEffect {
     constructor(fn, scheduler) {
         this.scheduler = scheduler;
@@ -138,8 +138,8 @@ const isTracking = () => {
 };
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
 const trigger = (target, key) => {
-    let depsMap = targetMap.get(target);
-    let dep = depsMap.get(key);
+    let depsMap = targetMap === null || targetMap === void 0 ? void 0 : targetMap.get(target);
+    let dep = depsMap === null || depsMap === void 0 ? void 0 : depsMap.get(key);
     triggerEffects(dep);
 };
 const triggerEffects = (dep) => {

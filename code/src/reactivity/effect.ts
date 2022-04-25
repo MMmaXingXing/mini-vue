@@ -1,7 +1,7 @@
 import { extend } from "../../shared/index";
 
-let activeEffect;
-let shouldTrack;
+let activeEffect: any = void 0;
+let shouldTrack = false;
 export class ReactiveEffect {
   private _fn;
   deps = [];
@@ -81,11 +81,10 @@ export const isTracking = () => {
 
 // 基于target，key去取depsMap中的值，最后遍历所有搜集到的fn，
 export const trigger = (target, key) => {
-  let depsMap = targetMap.get(target);
-  let dep = depsMap.get(key);
+  let depsMap = targetMap?.get(target);
+  let dep = depsMap?.get(key);
   triggerEffects(dep);
 };
-
 export const triggerEffects = (dep) => {
   for (const effect of dep) {
     if (effect.scheduler) {
