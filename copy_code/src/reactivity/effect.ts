@@ -73,7 +73,7 @@ export const trigger = (target, key) => {
   let depsMap = targetMap.get(target);
   let dep = depsMap.get(key);
 
-  triggerEffects(dep);
+  triggerEffects(new Set(dep));
 };
 
 export const triggerEffects = (dep) => {
@@ -98,3 +98,5 @@ export const effect = (fn, options: any = {}) => {
 export const stop = (runner) => {
   runner.effect.stop(effect);
 };
+
+

@@ -450,7 +450,7 @@ const createAppAPI = (render) => {
 };
 
 const createRenderer = (options) => {
-    const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert } = options;
+    const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert, remove: hostRemove, setElementChildren: hostSetElementText } = options;
     const render = (vnode, container) => {
         // patch 调用patch方法
         patch(null, vnode, container, null);
@@ -486,7 +486,7 @@ const createRenderer = (options) => {
     const processFragment = (n1, n2, container, parentComponent) => {
         // Implemment
         // 将虚拟节点
-        mountChildren(n2, container, parentComponent);
+        mountChildren(n2.children, container, parentComponent);
     };
     const processElement = (n1, n2, container, parentComponent) => {
         // init --> update
@@ -494,10 +494,10 @@ const createRenderer = (options) => {
             mountElement(n2, container, parentComponent);
         }
         else {
-            patchElement(n1, n2);
+            patchElement(n1, n2, container, parentComponent);
         }
     };
-    const patchElement = (n1, n2, container) => {
+    const patchElement = (n1, n2, container, parentComponent) => {
         console.log("patchElement");
         console.log(n1);
         console.log(n2);
@@ -505,9 +505,35 @@ const createRenderer = (options) => {
         const newProps = n2.props || EMPTY_OBJ;
         //
         const el = (n2.el = n1.el);
+        patchChildern(n1, n2, el, parentComponent);
         patchProps(el, oldProps, newProps);
         // props
         // children 更新对比
+    };
+    const patchChildern = (n1, n2, container, parentComponent) => {
+        const prevShapeFlag = n1.shapeFlag;
+        const { shapeFlag } = n2;
+        const c1 = n1.children;
+        const c2 = n2.children;
+        // 新的是text
+        if (shapeFlag & 4 /* TEXT_CHILDREN */) {
+            if (prevShapeFlag & 8 /* ARRAY_CHILDREN */) {
+                // 1. 老children清空
+                unmountChildren(n1.children);
+            }
+            if (c1 !== c2) {
+                // 2. 设置text
+                hostSetElementText(container, c2);
+            }
+        }
+        else {
+            // 新的是array
+            if (prevShapeFlag & 4 /* TEXT_CHILDREN */) {
+                // 之前的清空掉
+                hostSetElementText(container, "");
+                mountChildren(c2, container, parentComponent);
+            }
+        }
     };
     const patchProps = (el, oldProps, newProps) => {
         // 新老节点对比，来查看值是否一样，如果不一样则触发修改
@@ -528,7 +554,7 @@ const createRenderer = (options) => {
             }
         }
     };
-    const mountElement = (vnode, container, parentComponent) => {
+    function mountElement(vnode, container, parentComponent) {
         // 这里的vnode --> element --> div
         const el = (vnode.el = hostCreateElement(vnode.type));
         // 子元素节点处理
@@ -539,7 +565,7 @@ const createRenderer = (options) => {
         }
         else if (shapeFlag & 8 /* ARRAY_CHILDREN */) {
             // vnode
-            mountChildren(vnode, el, parentComponent);
+            mountChildren(vnode.children, el, parentComponent);
         }
         // props参数处理
         const { props } = vnode;
@@ -550,10 +576,18 @@ const createRenderer = (options) => {
         // el.setAttribute("id", "root");
         // document.body.append(el);
         hostInsert(el, container);
+    }
+    const unmountChildren = (children) => {
+        for (let i = 0; i < children.length; i++) {
+            const el = children[i].el;
+            // remove
+            // insert
+            hostRemove(el);
+        }
     };
     // 进行深层vnode节点处理
-    const mountChildren = (vnode, container, parentComponent) => {
-        vnode.children.forEach((v) => {
+    const mountChildren = (children, container, parentComponent) => {
+        children.forEach((v) => {
             patch(null, v, container, parentComponent);
         });
     };
@@ -615,13 +649,24 @@ const insert = (el, container) => {
     console.log("insert-----------------------");
     container.append(el);
 };
+const remove = (child) => {
+    const parent = child.parentNode;
+    if (parent) {
+        parent.removeChild(child);
+    }
+};
+const setElementChildren = (el, text) => {
+    el.textContent = text;
+};
 const renderer = createRenderer({
     createElement,
     patchProp,
-    insert
+    insert,
+    remove,
+    setElementChildren
 });
 const createApp = (...args) => {
     return renderer.createApp(...args);
 };
 
-export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots };
+export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, remove, renderSlots, setElementChildren };

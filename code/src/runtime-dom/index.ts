@@ -25,10 +25,23 @@ export const insert = (el, container) => {
   container.append(el);
 };
 
+export const remove = (child) => {
+  const parent = child.parentNode;
+  if (parent) {
+    parent.removeChild(child);
+  }
+};
+
+export const setElementChildren = (el, text) => {
+  el.textContent = text;
+};
+
 const renderer: any = createRenderer({
   createElement,
   patchProp,
-  insert
+  insert,
+  remove,
+  setElementChildren
 });
 
 export const createApp = (...args) => {
