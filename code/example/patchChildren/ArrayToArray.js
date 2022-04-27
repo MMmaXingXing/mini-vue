@@ -2,8 +2,28 @@
 // 新的是 Array
 
 import { ref, h } from "../../lib/guide-mini-vue.esm.js";
-const nextChildren = [h("div", {}, "C"), h("div", {}, "D")];
-const prevChildren = [h("div", {}, "A"), h("div", {}, "B")];
+// 1. 左侧的对比
+// (a,b) c
+// (a,b) d e
+const prevChildren = [h("div", {}, "A"), h("div", {}, "B"), h("div", {}, "C")];
+const nextChildren = [
+  h("div", {}, "A"),
+  h("div", {}, "B"),
+  h("div", {}, "C"),
+  h("div", {}, "D")
+];
+
+// 2. 右侧的对比
+// a (b, c)
+// (a, b) d e
+// const prevChildren = [h("div", {}, "A"), h("div", {}, "B"), h("div", {}, "C")];
+// const nextChildren = [
+//   h("div", {}, "D"),
+//   h("div", {}, "E"),
+//   h("div", {}, "B"),
+//   h("div", {}, "C")
+// ];
+
 
 export default {
   name: "ArrayToText",

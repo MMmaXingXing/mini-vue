@@ -16,9 +16,9 @@ export const App = {
       // 老的text，新的text
       // h(TextToText)
       // 老的text,新的array
-      h(TextToArray)
+      // h(TextToArray)
       // 老的是array 新的是 array
-      // h(ArrayToArray)
+      h(ArrayToArray)
     ]);
   }
 };

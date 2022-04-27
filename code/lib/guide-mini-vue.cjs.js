@@ -531,11 +531,28 @@ const createRenderer = (options) => {
             }
         }
         else {
-            // 新的是array
+            // 新的是Array
             if (prevShapeFlag & 4 /* TEXT_CHILDREN */) {
                 // 之前的清空掉
                 hostSetElementText(container, "");
                 mountChildren(c2, container, parentComponent);
+            }
+            else {
+                // Array -> Array
+                patchKeyedChildren(c1, c2);
+            }
+        }
+    };
+    const patchKeyedChildren = (c1, c2, container, parentComponent) => {
+        let i = 0;
+        let e1 = c1.length - 1;
+        let e2 = c2.length - 1;
+        while (i <= e1 && i <= e2) {
+            const n1 = c1[i];
+            const n2 = c2[i];
+            // 判断两个节点是否一样，一样的话再次调用patch去递归来处理
+            if (isSomeVNdoeType(n1, n2)) {
+                patch(n1, n2, container, parentComponent);
             }
         }
     };
