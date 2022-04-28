@@ -20,9 +20,9 @@ export function patchProp(el, key, prevProp, nextVal) {
   }
 }
 
-export const insert = (el, container) => {
+export const insert = (child, parent, anchor) => {
   console.log("insert-----------------------");
-  container.append(el);
+  parent.insertBefore(child, anchor || null);
 };
 
 export const remove = (child) => {
