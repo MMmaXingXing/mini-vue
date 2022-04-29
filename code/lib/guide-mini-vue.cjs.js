@@ -582,8 +582,8 @@ const createRenderer = (options) => {
         // 3. 新的比老的多，创建
         if (i > e1) {
             if (i <= e2) {
-                const nextPos = i + 1;
-                const anchor = i + 1 < l2 ? c2[nextPos].el : null;
+                const nextPos = e2 + 1;
+                const anchor = nextPos < l2 ? c2[nextPos].el : null;
                 // 可能是多个节点
                 while (i <= e2) {
                     patch(null, c2[i], container, parentComponent, anchor);
@@ -592,12 +592,56 @@ const createRenderer = (options) => {
             }
         }
         else if (i > e2) {
+            // 4. 新的比老的少
             while (i <= e1) {
                 hostRemove(c1[i].el);
                 i++;
             }
         }
-        // 4. 新的比老的少
+        else {
+            // 中间对比
+            // 先遍历老的节点
+            let s1 = i;
+            let s2 = i;
+            // 记录新的节点的总数量,索引+1
+            const toBePatched = e2 - s2 + 1;
+            //记录当前处理的总数量
+            let patched = 0;
+            const keyToNewIndexMap = new Map();
+            // 通过新组件创建映射表
+            for (let i = s2; i <= e2; i++) {
+                const nextChild = c2[i];
+                keyToNewIndexMap.set(nextChild.key, i);
+            }
+            // 通过老组件进行查找
+            for (let i = s1; i <= e1; i++) {
+                const prevChild = c1[i];
+                if (patched >= toBePatched) {
+                    hostRemove(prevChild.el);
+                }
+                let newIndex;
+                // 有key取key
+                if (prevChild.key !== null) {
+                    newIndex = keyToNewIndexMap.get(prevChild.key);
+                }
+                else {
+                    for (let j = s2; j < e2; j++) {
+                        if (isSomeVNdoeType(prevChild, c2[j])) {
+                            newIndex = j;
+                            break;
+                        }
+                    }
+                }
+                if (newIndex == undefined) {
+                    hostRemove(prevChild.el);
+                }
+                else {
+                    patch(prevChild, c2[newIndex], container, parentComponent, null);
+                    // 处理完新节点自增
+                    patched++;
+                }
+            }
+        }
     };
     const patchProps = (el, oldProps, newProps) => {
         // 新老节点对比，来查看值是否一样，如果不一样则触发修改
