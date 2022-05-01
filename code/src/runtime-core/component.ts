@@ -9,6 +9,7 @@ export const createComponentInstance = (vnode, parent) => {
   const component = {
     vnode,
     type: vnode.type,
+    next: null, // 存储下次要更新的虚拟几诶单值
     setupState: {},
     props: {},
     slots: {},

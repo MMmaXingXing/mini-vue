@@ -9,6 +9,7 @@ const createVNode = (type, props, children) => {
         type,
         props,
         children,
+        component: null,
         key: props && props.key,
         shapeFlag: getShapeFlag(type),
         el: null
@@ -312,7 +313,8 @@ const initProps = (instance, rawProps) => {
 
 const publicPropertiesMap = {
     $el: (i) => i.vnode.el,
-    $slots: (i) => i.slots
+    $slots: (i) => i.slots,
+    $props: (i) => i.props
 };
 const PublicInstanceProxyHandlers = {
     get({ _: instance }, key) {
@@ -355,6 +357,7 @@ const createComponentInstance = (vnode, parent) => {
     const component = {
         vnode,
         type: vnode.type,
+        next: null,
         setupState: {},
         props: {},
         slots: {},
@@ -437,6 +440,16 @@ const inject = (key, defaultValue) => {
             return defaultValue;
         }
     }
+};
+
+const shouldUpdateComponent = (prevVNode, nextVNode) => {
+    const { props: prevProps } = prevVNode;
+    const { props: nextProps } = nextVNode;
+    for (let key in nextProps) {
+        if (nextProps[key] !== prevProps[key])
+            return true;
+    }
+    return false;
 };
 
 const createAppAPI = (render) => {
@@ -740,15 +753,32 @@ const createRenderer = (options) => {
         });
     };
     const processComponent = (n1, n2, container, parentComponent, anchor) => {
-        mountComponent(n2, container, parentComponent, anchor);
+        if (!n1) {
+            mountComponent(n2, container, parentComponent, anchor);
+        }
+        else {
+            updateComponent(n1, n2);
+        }
+    };
+    const updateComponent = (n1, n2) => {
+        const instance = (n2.component = n1.component);
+        if (shouldUpdateComponent(n1, n2)) {
+            // 使用next来存储更新过后的节点
+            instance.next = n2;
+            instance.update();
+        }
+        else {
+            n2.el = n1.el;
+            n2.vnode = n2;
+        }
     };
     const mountComponent = (initnalVNode, container, parentComponent, anchor) => {
-        const instance = createComponentInstance(initnalVNode, parentComponent);
+        const instance = (initnalVNode.component = createComponentInstance(initnalVNode, parentComponent));
         setupComponent(instance);
         setupRenderEffect(instance, initnalVNode, container, anchor);
     };
     const setupRenderEffect = (instance, initnalVNode, container, anchor) => {
-        effect(() => {
+        instance.update = effect(() => {
             if (!instance.isMounted) {
                 const { proxy } = instance;
                 const subTree = (instance.subTree = instance.render.call(proxy));
@@ -761,12 +791,23 @@ const createRenderer = (options) => {
             }
             else {
                 console.log("update");
+                // 需要一个更新完成后的虚拟节点,之前的节点为vnode
+                const { next, vnode } = instance;
+                if (next) {
+                    next.el = vnode.el;
+                    updateComponentPreRender(instance, next);
+                }
                 const { proxy } = instance;
                 const subTree = instance.render.call(proxy);
                 const prevSubTree = instance.subTree;
                 patch(prevSubTree, subTree, container, instance, anchor);
             }
         });
+    };
+    const updateComponentPreRender = (instance, nextVNode) => {
+        instance.vnode = nextVNode;
+        instance.next = null;
+        instance.props = nextVNode.props;
     };
     return {
         createApp: createAppAPI(render)
