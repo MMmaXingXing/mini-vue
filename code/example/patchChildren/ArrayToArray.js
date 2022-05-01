@@ -99,25 +99,72 @@ import { ref, h } from "../../lib/guide-mini-vue.esm.js";
 // a, b, (e, c), f, g
 // 老节点比新的几诶单多，那么多出来的可以直接干掉（优化删除逻辑）
 // c 节点的 props 发生了变化
+// const prevChildren = [
+//   h("div", { key: "A" }, "A"),
+//   h("div", { key: "B" }, "B"),
+//   h("div", { key: "C", id: "c-prev" }, "C"),
+//   h("div", { key: "E" }, "E"),
+//   h("div", { key: "D" }, "D"),
+//   h("div", { key: "F" }, "F"),
+//   h("div", { key: "G" }, "G")
+// ];
+// const nextChildren = [
+//   h("div", { key: "A" }, "A"),
+//   h("div", { key: "B" }, "B"),
+//   h("div", { key: "E" }, "E"),
+//   h("div", { key: "C", id: "c-next" }, "C"),
+//   h("div", { key: "F" }, "F"),
+//   h("div", { key: "G" }, "G")
+// ];
 
+// 2. 移动(节点存在在新的和老的里面，但是位置变了)
+// 2.1
+// a, b, (c, d, e), f, g
+// a, b, (e, c, d), f, g
+// 最长子序列[1, 2]
+// const prevChildren = [
+//   h("div", { key: "A" }, "A"),
+//   h("div", { key: "B" }, "B"),
+//   h("div", { key: "C" }, "C"),
+//   h("div", { key: "D" }, "D"),
+//   h("div", { key: "E" }, "E"),
+//   h("div", { key: "F" }, "F"),
+//   h("div", { key: "G" }, "G")
+// ];
+// const nextChildren = [
+//   h("div", { key: "A" }, "A"),
+//   h("div", { key: "B" }, "B"),
+//   h("div", { key: "E" }, "E"),
+//   h("div", { key: "C" }, "C"),
+//   h("div", { key: "D" }, "D"),
+//   h("div", { key: "F" }, "F"),
+//   h("div", { key: "G" }, "G")
+// ];
+
+// 综合例子
+// a, b, (c, d, e, z), f, g
+// a, b, (d, c, y, e), f, g
+// 最长子序列[1, 2]
 const prevChildren = [
   h("div", { key: "A" }, "A"),
   h("div", { key: "B" }, "B"),
-  h("div", { key: "C", id: "c-prev" }, "C"),
-  h("div", { key: "E" }, "E"),
+  h("div", { key: "C" }, "C"),
   h("div", { key: "D" }, "D"),
+  h("div", { key: "E" }, "E"),
+  h("div", { key: "Z" }, "Z"),
   h("div", { key: "F" }, "F"),
   h("div", { key: "G" }, "G")
 ];
 const nextChildren = [
   h("div", { key: "A" }, "A"),
   h("div", { key: "B" }, "B"),
+  h("div", { key: "D" }, "D"),
+  h("div", { key: "C" }, "C"),
+  h("div", { key: "Y" }, "Y"),
   h("div", { key: "E" }, "E"),
-  h("div", { key: "C", id: "c-next" }, "C"),
   h("div", { key: "F" }, "F"),
   h("div", { key: "G" }, "G")
 ];
-
 export default {
   name: "ArrayToText",
   setup() {
