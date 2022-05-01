@@ -40,8 +40,8 @@
 - [x] 自定义渲染器(createReader) custom renderer
 - [x] 更新 element 流程搭建
 - [x] 更新 element props
-- [ ] 更新 element children
-- [ ] 实现 双端对比 diff 算法
+- [x] 更新 element children
+- [x] 实现 双端对比 diff 算法
 - [ ] 实现 组件更新
 - [ ] 支持 nextTick
 
