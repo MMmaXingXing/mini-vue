@@ -89,13 +89,13 @@ const parseElement = (context, ancestors) => {
   // 如果有子节点则内部递归处理
   element.children = parseChildren(context, ancestors);
   ancestors.pop();
-  if (context.source) {
-    if (startsWithEndTagOpen(context.source, element.tag)) {
-      parseTag(context, TagType.END);
-    } else {
-      throw new Error(`缺少结束标签：${element.tag}`);
-    }
+  // if (context.source) {
+  if (startsWithEndTagOpen(context.source, element.tag)) {
+    parseTag(context, TagType.END);
+  } else {
+    throw new Error(`缺少结束标签：${element.tag}`);
   }
+  // }
   return element;
 };
 
@@ -139,7 +139,7 @@ const parseInterpolation = (context) => {
   const content = rawContent.trim();
 
   // 获取之后删除
-  advanceBy(context, rowContentLength + closeDelimiter.length);
+  advanceBy(context, closeDelimiter.length);
   return {
     type: NodeTypes.INTERPOLATION,
     content: {
