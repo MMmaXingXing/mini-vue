@@ -44,9 +44,8 @@ const parseTag = (context, type: TagType) => {
 
   // 2. 删除处理完的代码
   advanceBy(context, match[0].length);
-  console.log(context.source);
   advanceBy(context, 1);
-  if (TagType.END) return;
+  if (type === TagType.END) return;
   return {
     type: NodeTypes.ELEMENT,
     tag
