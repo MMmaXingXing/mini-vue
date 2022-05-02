@@ -1,5 +1,10 @@
 import { NodeTypes } from "./ast";
 
+const enum TagType {
+  START,
+  END
+}
+
 export const baseParse = (content: string) => {
   // 创建一个全局的上下文对象
   const context = createParseContext(content);
@@ -10,13 +15,42 @@ const parseChildren = (context) => {
   const nodes: any[] = [];
 
   let node;
-  if (context.source.startsWith("{{")) {
+  const s = context.source;
+  if (s.startsWith("{{")) {
     node = parseInterpolation(context);
+  } else if (s[0] === "<") {
+    if (/[a-z]/i.test(s[1])) {
+      console.log("parse elemet");
+      node = parseElement(context);
+    }
   }
 
   nodes.push(node);
 
   return nodes;
+};
+
+const parseElement = (context) => {
+  // Implement
+  // 1. 解析tag
+  const element = parseTag(context, TagType.START);
+  parseTag(context, TagType.END);
+  return element;
+};
+
+const parseTag = (context, type: TagType) => {
+  const match: any = /^<\/?([a-z]*)/i.exec(context.source);
+  const tag = match[1];
+
+  // 2. 删除处理完的代码
+  advanceBy(context, match[0].length);
+  console.log(context.source);
+  advanceBy(context, 1);
+  if (TagType.END) return;
+  return {
+    type: NodeTypes.ELEMENT,
+    tag
+  };
 };
 
 const parseInterpolation = (context) => {

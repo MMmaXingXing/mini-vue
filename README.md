@@ -48,7 +48,7 @@
 ## compiler-core
 
 - [x] 实现 解析插值功能
-- [ ] 实现 解析 element 标签
+- [x] 实现 解析 element 标签
 - [ ] 实现 解析 text 功能
 - [ ] 实现 解析三种联合类型
 - [ ] 实现 parse&有限状态机
