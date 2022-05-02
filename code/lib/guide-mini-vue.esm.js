@@ -463,6 +463,33 @@ const createAppAPI = (render) => {
     return createApp;
 };
 
+const queue = [];
+let isFlushPending = false;
+const p = Promise.resolve();
+const nextTick = (fn) => {
+    return fn ? p.then(fn) : p;
+};
+const queueJobs = (job) => {
+    if (!queue.includes(job)) {
+        queue.push(job);
+    }
+    queueFlush();
+};
+const queueFlush = () => {
+    if (isFlushPending)
+        return;
+    isFlushPending = true;
+    //   Promise.resolve().then(() => {});
+    nextTick(flushJobs);
+};
+const flushJobs = () => {
+    isFlushPending = false;
+    let job;
+    while ((job = queue.shift())) {
+        job && job();
+    }
+};
+
 const createRenderer = (options) => {
     const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert, remove: hostRemove, setElementChildren: hostSetElementText } = options;
     const render = (vnode, container) => {
@@ -798,6 +825,11 @@ const createRenderer = (options) => {
                 const prevSubTree = instance.subTree;
                 patch(prevSubTree, subTree, container, instance, anchor);
             }
+        }, {
+            scheduler() {
+                console.log("update - schedular");
+                queueJobs(instance.update);
+            }
         });
     };
     const updateComponentPreRender = (instance, nextVNode) => {
@@ -895,4 +927,4 @@ const createApp = (...args) => {
     return renderer.createApp(...args);
 };
 
-export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, remove, renderSlots, setElementChildren };
+export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, remove, renderSlots, setElementChildren };
