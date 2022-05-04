@@ -993,7 +993,7 @@ const genFunctionPreamble = (context, ast) => {
     const vueBinging = "Vue";
     const aliasHelper = (s) => `${helperMapName[s]}:_${helperMapName[s]}`;
     if (ast.helpers.length > 0) {
-        push(`import { ${ast.helpers.map(aliasHelper)} } from ${vueBinging}`);
+        push(`const { ${ast.helpers.map(aliasHelper)} } = ${vueBinging}`);
     }
     push("\n");
     push("return ");
