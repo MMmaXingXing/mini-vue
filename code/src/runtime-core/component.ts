@@ -63,9 +63,14 @@ const handleSetupResult = (instance, steupResult: any) => {
 const finishComponentSetup = (instance) => {
   const Component = instance.type;
 
-  //   if (Component.render) {
+  if (compiler && !Component.render) {
+    if (Component.template) {
+      Component.render = compiler(Component.template);
+    }
+  }
+
+  // template
   instance.render = Component.render;
-  //   }
 };
 
 let currentInstance = null;
@@ -75,4 +80,9 @@ export const getCurrentInstance = () => {
 
 export const setCurrentInstance = (instance) => {
   currentInstance = instance;
+};
+
+let compiler;
+export const registerRuntimeCompiler = (_compiler) => {
+  compiler = _compiler;
 };

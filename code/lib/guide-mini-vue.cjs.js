@@ -55,6 +55,9 @@ const EMPTY_OBJ = {};
 const isObject = (val) => {
     return val !== undefined && typeof val === "object";
 };
+const isString = (value) => {
+    return typeof value === "string";
+};
 const hasChange = (value, newValue) => {
     return !Object.is(value, newValue);
 };
@@ -400,9 +403,13 @@ const handleSetupResult = (instance, steupResult) => {
 };
 const finishComponentSetup = (instance) => {
     const Component = instance.type;
-    //   if (Component.render) {
+    if (compiler && !Component.render) {
+        if (Component.template) {
+            Component.render = compiler(Component.template);
+        }
+    }
+    // template
     instance.render = Component.render;
-    //   }
 };
 let currentInstance = null;
 const getCurrentInstance = () => {
@@ -410,6 +417,10 @@ const getCurrentInstance = () => {
 };
 const setCurrentInstance = (instance) => {
     currentInstance = instance;
+};
+let compiler;
+const registerRuntimeCompiler = (_compiler) => {
+    compiler = _compiler;
 };
 
 const provide = (key, value) => {
@@ -808,7 +819,7 @@ const createRenderer = (options) => {
         instance.update = effect(() => {
             if (!instance.isMounted) {
                 const { proxy } = instance;
-                const subTree = (instance.subTree = instance.render.call(proxy));
+                const subTree = (instance.subTree = instance.render.call(proxy, proxy));
                 // vnode --> patch
                 // vnode --> element --> mountElement
                 patch(null, subTree, container, instance, anchor);
@@ -825,7 +836,7 @@ const createRenderer = (options) => {
                     updateComponentPreRender(instance, next);
                 }
                 const { proxy } = instance;
-                const subTree = instance.render.call(proxy);
+                const subTree = instance.render.call(proxy, proxy);
                 const prevSubTree = instance.subTree;
                 patch(prevSubTree, subTree, container, instance, anchor);
             }
@@ -931,6 +942,442 @@ const createApp = (...args) => {
     return renderer.createApp(...args);
 };
 
+var runtimeDom = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createElement: createElement,
+    patchProp: patchProp,
+    insert: insert,
+    remove: remove,
+    setElementChildren: setElementChildren,
+    createApp: createApp,
+    h: h,
+    renderSlots: renderSlots,
+    createTextVNode: createTextVNode,
+    getCurrentInstance: getCurrentInstance,
+    registerRuntimeCompiler: registerRuntimeCompiler,
+    provide: provide,
+    inject: inject,
+    createRenderer: createRenderer,
+    nextTick: nextTick
+});
+
+const TO_DISPLAY_STRING = Symbol("toDisplayString");
+const CREATE_ELEMENT_VNODE = Symbol("createElementVNode");
+const helperMapName = {
+    [TO_DISPLAY_STRING]: "toDisplayString",
+    [CREATE_ELEMENT_VNODE]: "createElementVNode"
+};
+
+const generate = (ast) => {
+    const context = createCodegenContext();
+    const { push } = context;
+    genFunctionPreamble(context, ast);
+    const functionName = "render";
+    const args = ["_ctx", "_cache"];
+    const signature = args.join(",");
+    push(`function ${functionName}(${signature}){`);
+    push(`return `);
+    genNode(ast.codegenNode, context);
+    push("}");
+    return {
+        code: context.code
+    };
+};
+const genFunctionPreamble = (context, ast) => {
+    const { push } = context;
+    const vueBinging = "Vue";
+    const aliasHelper = (s) => `${helperMapName[s]}:_${helperMapName[s]}`;
+    if (ast.helpers.length > 0) {
+        push(`import { ${ast.helpers.map(aliasHelper)} } from ${vueBinging}`);
+    }
+    push("\n");
+    push("return ");
+};
+const createCodegenContext = () => {
+    const context = {
+        code: "",
+        push(source) {
+            context.code += source;
+        },
+        helper(key) {
+            return `_${helperMapName[key]}`;
+        }
+    };
+    return context;
+};
+const genNode = (node, context) => {
+    switch (node.type) {
+        case 3 /* TEXT */:
+            genText(context, node);
+            break;
+        case 0 /* INTERPOLATION */:
+            genInterpolation(node, context);
+            break;
+        case 1 /* SIMPLE_EXPRESSION */:
+            genExpression(node, context);
+            break;
+        case 2 /* ELEMENT */:
+            genElement(node, context);
+            break;
+        case 5 /* COMPOUND_EXPRESSION */:
+            genCompoundExpression(node, context);
+            break;
+    }
+};
+const genCompoundExpression = (node, context) => {
+    const { push } = context;
+    const children = node.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (isString(child)) {
+            push(child);
+        }
+        else {
+            genNode(child, context);
+        }
+    }
+};
+const genElement = (node, context) => {
+    const { push, helper } = context;
+    const { tag, children, props } = node;
+    // const child = children[0];
+    push(`${helper(CREATE_ELEMENT_VNODE)}(`);
+    // genNode(child, context);
+    // 元素节点最顶层只会有一层，因此
+    // for (let i = 0; i < children.length; i++) {
+    //   // 新增复合节点类型 compound
+    //   const child = children[i];
+    //   genNode(child, context);
+    // }
+    genNodeList(genNullable([tag, props, children]), context);
+    // genNode(children, context);
+    push(")");
+};
+const genNodeList = (nodes, context) => {
+    const { push } = context;
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        if (isString(node)) {
+            push(node);
+        }
+        else {
+            genNode(node, context);
+        }
+        if (i < nodes.length - 1) {
+            push(", ");
+        }
+    }
+};
+const genNullable = (args) => {
+    return args.map((arg) => arg || "null");
+};
+const genExpression = (node, context) => {
+    const { push } = context;
+    push(`${node.content}`);
+};
+const genInterpolation = (node, context) => {
+    const { push, helper } = context;
+    push(`${helper(TO_DISPLAY_STRING)}(`);
+    genNode(node.content, context);
+    push(")");
+};
+const genText = (context, node) => {
+    const { push } = context;
+    push(`'${node.content}'`);
+};
+
+const baseParse = (content) => {
+    // 创建一个全局的上下文对象
+    const context = createParseContext(content);
+    return createRoot(parseChildren(context, []));
+};
+const parseChildren = (context, ancestors) => {
+    const nodes = [];
+    while (!isEnd(context, ancestors)) {
+        let node;
+        const s = context.source;
+        if (s.startsWith("{{")) {
+            node = parseInterpolation(context);
+        }
+        else if (s[0] === "<") {
+            if (/[a-z]/i.test(s[1])) {
+                console.log("parse elemet");
+                node = parseElement(context, ancestors);
+            }
+        }
+        if (!node) {
+            node = parseText(context);
+        }
+        nodes.push(node);
+    }
+    return nodes;
+};
+const isEnd = (context, ancestors) => {
+    // 2. 结束标签
+    const s = context.source;
+    // 根据压栈来命中结束标签
+    if (s.startsWith(`</`)) {
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+            const tag = ancestors[i].tag;
+            if (startsWithEndTagOpen(s, tag)) {
+                return true;
+            }
+        }
+    }
+    // 1. 内容为空
+    return !s;
+};
+const parseText = (context) => {
+    let endIndex = context.source.length;
+    let endToken = ["<", "{{"];
+    for (let i = 0; i < endToken.length; i++) {
+        const index = context.source.indexOf(endToken[i]);
+        if (index !== -1 && endIndex > index) {
+            endIndex = index;
+        }
+    }
+    // 1. 取值，获取content
+    const content = parseTextData(context, endIndex);
+    console.log("content--------", content);
+    return {
+        type: 3 /* TEXT */,
+        content: content
+    };
+};
+const parseTextData = (context, length) => {
+    const content = context.source.slice(0, length);
+    // 2. 推进
+    advanceBy(context, length);
+    return content;
+};
+const parseElement = (context, ancestors) => {
+    // Implement
+    // 1. 解析tag
+    const element = parseTag(context, 0 /* START */);
+    ancestors.push(element);
+    // 如果有子节点则内部递归处理
+    element.children = parseChildren(context, ancestors);
+    ancestors.pop();
+    // if (context.source) {
+    if (startsWithEndTagOpen(context.source, element.tag)) {
+        parseTag(context, 1 /* END */);
+    }
+    else {
+        throw new Error(`缺少结束标签：${element.tag}`);
+    }
+    // }
+    return element;
+};
+const startsWithEndTagOpen = (source, tag) => {
+    return (source.startsWith("</") &&
+        source.slice(2, tag.length + 2).toLowerCase() === tag.toLowerCase());
+};
+const parseTag = (context, type) => {
+    const match = /^<\/?([a-z]*)/i.exec(context.source);
+    const tag = match[1];
+    // 2. 删除处理完的代码
+    advanceBy(context, match[0].length);
+    advanceBy(context, 1);
+    if (type === 1 /* END */)
+        return;
+    return {
+        type: 2 /* ELEMENT */,
+        tag
+    };
+};
+const parseInterpolation = (context) => {
+    // {{message}}
+    // 关键字变化点，抽取出来使程序解耦
+    const openDelimiter = "{{";
+    const closeDelimiter = "}}";
+    const closeIndex = context.source.indexOf(closeDelimiter, closeDelimiter.length);
+    // 前两个数据可以将前两个字符串干掉来进行一字符的推进
+    advanceBy(context, openDelimiter.length);
+    const rowContentLength = closeIndex - openDelimiter.length;
+    const rawContent = parseTextData(context, rowContentLength);
+    const content = rawContent.trim();
+    // 获取之后删除
+    advanceBy(context, closeDelimiter.length);
+    return {
+        type: 0 /* INTERPOLATION */,
+        content: {
+            type: 1 /* SIMPLE_EXPRESSION */,
+            content: content
+        }
+    };
+};
+const advanceBy = (context, length) => {
+    context.source = context.source.slice(length);
+};
+const createRoot = (children) => {
+    return {
+        type: 4 /* ROOT */,
+        children,
+        helpers: []
+    };
+};
+const createParseContext = (content) => {
+    return {
+        source: content
+    };
+};
+
+const transform = (root, options = {}) => {
+    const context = createTransformContext(root, options);
+    // 1. 遍历 - 深度优先搜索
+    traverseNode(root, context);
+    // 2. 修改 text content
+    // root.codegenNode
+    createRootCodgen(root);
+    root.helpers = [...context.helpers.keys()];
+};
+const createRootCodgen = (root) => {
+    const child = root.children[0];
+    if (child.type === 2 /* ELEMENT */ && child.codegenNode) {
+        root.codegenNode = child.codegenNode;
+    }
+    else {
+        root.codegenNode = child;
+    }
+};
+const createTransformContext = (root, options) => {
+    // 创建全局上下文对象来存储我们传入的数据
+    const context = {
+        root,
+        nodeTransforms: options.nodeTransforms || [],
+        helpers: new Map(),
+        helper(key) {
+            context.helpers.set(key, 1);
+        }
+    };
+    return context;
+};
+const traverseNode = (node, context) => {
+    // 实现深度优先搜索
+    // 1. element
+    const nodeTransforms = context.nodeTransforms;
+    const exitFns = [];
+    for (let i = 0; i < nodeTransforms.length; i++) {
+        const transform = nodeTransforms[i];
+        const onExit = transform(node, context);
+        if (onExit)
+            exitFns.push(onExit);
+    }
+    // 判断类型
+    switch (node.type) {
+        case 0 /* INTERPOLATION */:
+            // 判断是不是插值 balabala
+            context.helper(TO_DISPLAY_STRING);
+            break;
+        case 4 /* ROOT */:
+        case 2 /* ELEMENT */:
+            traverseChildren(node, context);
+            break;
+    }
+    let i = exitFns.length;
+    while (i--) {
+        exitFns[i]();
+    }
+};
+const traverseChildren = (node, context) => {
+    const children = node.children;
+    for (let i = 0; i < children.length; i++) {
+        const node = children[i];
+        traverseNode(node, context);
+    }
+};
+
+const createVNodeCall = (context, tag, props, children) => {
+    context.helper(CREATE_ELEMENT_VNODE);
+    return {
+        type: 2 /* ELEMENT */,
+        tag: tag,
+        props: props,
+        children: children
+    };
+};
+
+const transformElement = (node, context) => {
+    if (node.type === 2 /* ELEMENT */) {
+        return () => {
+            // 中间处理层
+            // tag
+            const vnodeTag = `"${node.tag}"`;
+            // props
+            let vnodeProps;
+            //children
+            const children = node.children;
+            let vnodeChildren = children[0];
+            node.codegenNode = createVNodeCall(context, vnodeTag, vnodeProps, vnodeChildren);
+        };
+    }
+};
+
+// 触发时包含在插值类型中
+const transformExpression = (node) => {
+    if (node.type === 0 /* INTERPOLATION */) {
+        node.content = processExpression(node.content);
+    }
+};
+function processExpression(node) {
+    node.content = "_ctx." + node.content;
+    return node;
+}
+
+const isText = (node) => {
+    return node.type === 3 /* TEXT */ || node.type === 0 /* INTERPOLATION */;
+};
+
+const transformText = (node) => {
+    if (node.type === 2 /* ELEMENT */) {
+        return () => {
+            let currentContainer;
+            const { children } = node;
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (isText(child)) {
+                    for (let j = i + 1; j < children.length; j++) {
+                        const nextChild = children[j];
+                        if (isText(nextChild)) {
+                            if (!currentContainer) {
+                                currentContainer = children[i] = {
+                                    type: 5 /* COMPOUND_EXPRESSION */,
+                                    children: [child]
+                                };
+                            }
+                            currentContainer.children.push(" + ");
+                            currentContainer.children.push(nextChild);
+                            children.splice(j, 1);
+                            j--;
+                        }
+                        else {
+                            currentContainer = undefined;
+                            break;
+                        }
+                    }
+                }
+            }
+        };
+    }
+};
+
+const baseCompile = (template) => {
+    const ast = baseParse(template);
+    transform(ast, {
+        nodeTransforms: [transformExpression, transformElement, transformText]
+    });
+    return generate(ast);
+};
+
+// mini-vue 出口
+// render
+const compileToFunction = (template) => {
+    const { code } = baseCompile(template);
+    const render = new Function("Vue", code)(runtimeDom);
+    return render;
+};
+registerRuntimeCompiler(compileToFunction);
+
 exports.createApp = createApp;
 exports.createElement = createElement;
 exports.createRenderer = createRenderer;
@@ -945,6 +1392,7 @@ exports.patchProp = patchProp;
 exports.provide = provide;
 exports.proxyRefs = proxyRefs;
 exports.ref = ref;
+exports.registerRuntimeCompiler = registerRuntimeCompiler;
 exports.remove = remove;
 exports.renderSlots = renderSlots;
 exports.setElementChildren = setElementChildren;
