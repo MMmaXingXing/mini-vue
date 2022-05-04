@@ -1,7 +1,9 @@
-import { ShapeFlags } from "../../shared/ShapeFlags";
+import { ShapeFlags } from "../shared/ShapeFlags";
 
 export const Fragment = Symbol("Fragment");
 export const Text = Symbol("Text");
+
+export { createVNode as createElementVNode };
 
 export const createVNode = (type, props?, children?) => {
   const vnode = {

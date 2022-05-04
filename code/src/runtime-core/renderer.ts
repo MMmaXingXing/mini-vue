@@ -1,5 +1,5 @@
-import { EMPTY_OBJ } from "../../shared";
-import { ShapeFlags } from "../../shared/ShapeFlags";
+import { EMPTY_OBJ } from "../shared";
+import { ShapeFlags } from "../shared/ShapeFlags";
 import { effect } from "../reactivity/effect";
 import { createComponentInstance, setupComponent } from "./component";
 import { shouldUpdateComponent } from "./componentUpdateUtils";

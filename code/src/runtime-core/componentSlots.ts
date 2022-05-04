@@ -1,4 +1,4 @@
-import { ShapeFlags } from "../../shared/ShapeFlags";
+import { ShapeFlags } from "../shared/ShapeFlags";
 
 export const initSlots = (instance, children) => {
   // 数组类型结构渲染

@@ -1,4 +1,4 @@
-import { camelize, toHandlerKey } from "../../shared/index";
+import { camelize, toHandlerKey } from "../shared/index";
 
 export const emit = (instance, event, ...args) => {
   console.log("emit", event);

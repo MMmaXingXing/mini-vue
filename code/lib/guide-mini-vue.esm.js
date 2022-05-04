@@ -46,6 +46,10 @@ const renderSlots = (slots, name, props) => {
     }
 };
 
+const toDisplayString = (value) => {
+    return String(value);
+};
+
 const extend = Object.assign;
 const EMPTY_OBJ = {};
 const isObject = (val) => {
@@ -949,12 +953,17 @@ var runtimeDom = /*#__PURE__*/Object.freeze({
     h: h,
     renderSlots: renderSlots,
     createTextVNode: createTextVNode,
+    createElementVNode: createVNode,
     getCurrentInstance: getCurrentInstance,
     registerRuntimeCompiler: registerRuntimeCompiler,
     provide: provide,
     inject: inject,
     createRenderer: createRenderer,
-    nextTick: nextTick
+    nextTick: nextTick,
+    toDisplayString: toDisplayString,
+    ref: ref,
+    proxyRefs: proxyRefs,
+    effect: effect
 });
 
 const TO_DISPLAY_STRING = Symbol("toDisplayString");
@@ -1374,4 +1383,4 @@ const compileToFunction = (template) => {
 };
 registerRuntimeCompiler(compileToFunction);
 
-export { createApp, createElement, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, registerRuntimeCompiler, remove, renderSlots, setElementChildren };
+export { createApp, createElement, createVNode as createElementVNode, createRenderer, createTextVNode, effect, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, registerRuntimeCompiler, remove, renderSlots, setElementChildren, toDisplayString };

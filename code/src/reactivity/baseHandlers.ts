@@ -1,5 +1,5 @@
 import { reactive } from "./reactive";
-import { isObject, extend } from "../../shared/index";
+import { isObject, extend } from "../shared/index";
 import { track, trigger } from "./effect";
 import { ReactiveFlags, readonly } from "./reactive";
 
