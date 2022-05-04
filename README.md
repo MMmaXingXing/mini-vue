@@ -56,7 +56,7 @@
 - [x] 实现 代码生成 string 类型
 - [x] 实现 代码生成插值类型 cmproj
 - [x] 实现 代码生成三种联合类型
-- [ ] 实现 编译 template 成 render 函数
+- [x] 实现 编译 template 成 render 函数
 
 ## build
 
