@@ -156,7 +156,8 @@ const advanceBy = (context: any, length: number) => {
 const createRoot = (children) => {
   return {
     type: NodeTypes.ROOT,
-    children
+    children,
+    helpers: []
   };
 };
 

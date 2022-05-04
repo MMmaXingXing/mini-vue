@@ -1,4 +1,3 @@
-import { NO } from "@vue/shared";
 import { NodeTypes } from "./ast";
 import { TO_DISPLAY_STRING } from "./runtimeHelpers";
 
@@ -15,7 +14,12 @@ export const transform = (root, options = {}) => {
 };
 
 const createRootCodgen = (root) => {
-  root.codegenNode = root.children[0];
+  const child = root.children[0];
+  if (child.type === NodeTypes.ELEMENT && child.codegenNode) {
+    root.codegenNode = child.codegenNode;
+  } else {
+    root.codegenNode = child;
+  }
 };
 
 const createTransformContext = (root, options) => {
@@ -36,9 +40,11 @@ const traverseNode = (node, context) => {
   // 实现深度优先搜索
   // 1. element
   const nodeTransforms = context.nodeTransforms;
+  const exitFns: any = [];
   for (let i = 0; i < nodeTransforms.length; i++) {
     const transform = nodeTransforms[i];
-    transform && transform(node);
+    const onExit = transform(node, context);
+    if (onExit) exitFns.push(onExit);
   }
 
   // 判断类型
@@ -53,6 +59,10 @@ const traverseNode = (node, context) => {
       break;
     default:
       break;
+  }
+  let i = exitFns.length;
+  while (i--) {
+    exitFns[i]();
   }
 };
 
